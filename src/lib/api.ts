@@ -183,3 +183,82 @@ export async function documentCall(
 export async function getRisks(): Promise<{ risks: Risk[] }> {
   return apiRequest("/alien/risks", "POST", {});
 }
+
+// ================== Knowledge Base ==================
+
+export interface KnowledgeEntry {
+  id: string;
+  title: string;
+  content: string;
+  sourceType: string;
+  tags: string[];
+  summary?: string;
+  createdAt: string;
+}
+
+export async function uploadKnowledge(
+  title: string,
+  content: string,
+  sourceType = "manual_entry",
+  tags: string[] = []
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  return apiRequest("/knowledge/upload", "POST", { title, content, sourceType, tags });
+}
+
+export async function searchKnowledge(query: string): Promise<{ results: KnowledgeEntry[] }> {
+  return apiRequest("/knowledge/search", "POST", { query });
+}
+
+export async function listKnowledge(): Promise<{ entries: KnowledgeEntry[] }> {
+  return apiRequest("/knowledge/list", "POST", {});
+}
+
+// ================== Canadian Financial Data ==================
+
+export interface FinancialData {
+  bankOfCanadaRate: number;
+  primeRate: number;
+  cpi: number;
+  lastUpdated: string;
+}
+
+export interface ContributionLimits {
+  year: number;
+  rrsp: number;
+  tfsa: number;
+  fhsa: number;
+  cppMax: number;
+  lcge: number;
+}
+
+export async function getFinancialData(): Promise<FinancialData> {
+  return apiRequest("/financial/current", "POST", {});
+}
+
+export async function getContributionLimits(): Promise<ContributionLimits> {
+  return apiRequest("/financial/contribution-limits", "POST", {});
+}
+
+// ================== GAAR Compliance ==================
+
+export interface ComplianceCheck {
+  warning: boolean;
+  level: "none" | "caution" | "warning" | "critical";
+  message?: string;
+  details?: string[];
+}
+
+export interface ComplianceAnalysis {
+  risk: "low" | "medium" | "high";
+  factors: string[];
+  recommendations: string[];
+  gaarApplicable: boolean;
+}
+
+export async function checkCompliance(message: string): Promise<ComplianceCheck> {
+  return apiRequest("/compliance/check", "POST", { message });
+}
+
+export async function analyzeCompliance(scenario: string): Promise<ComplianceAnalysis> {
+  return apiRequest("/compliance/analyze", "POST", { scenario });
+}

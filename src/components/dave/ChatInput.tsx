@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from "react";
-import { ArrowUp, FileText, Database, Calendar, Radio, Paperclip, X } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { ArrowUp, FileText, Database, Calendar, Radio, Paperclip, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
   onSend: (message: string, files?: File[]) => void;
@@ -22,8 +23,10 @@ export function ChatInput({
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = () => {
     if ((input.trim() || attachedFiles.length > 0) && !isLoading) {
@@ -40,12 +43,24 @@ export function ChatInput({
     }
   };
 
+  const addFiles = useCallback((files: File[]) => {
+    const validFiles = files.filter((file) => {
+      const validTypes = [
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".txt",
+        ".jpg", ".jpeg", ".png", ".gif", ".webp"
+      ];
+      const extension = `.${file.name.split(".").pop()?.toLowerCase()}`;
+      return validTypes.includes(extension);
+    });
+    
+    if (validFiles.length > 0) {
+      setAttachedFiles((prev) => [...prev, ...validFiles]);
+    }
+  }, []);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setAttachedFiles((prev) => [...prev, ...files]);
-    }
-    // Reset input so the same file can be selected again
+    addFiles(files);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -59,6 +74,37 @@ export function ChatInput({
     fileInputRef.current?.click();
   };
 
+  // Drag and drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Only set dragging to false if we're leaving the drop zone entirely
+    if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    addFiles(droppedFiles);
+  }, [addFiles]);
+
   // Auto-resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -70,7 +116,24 @@ export function ChatInput({
 
   return (
     <div className="border-t bg-card p-4">
-      <div className="mx-auto max-w-3xl space-y-3">
+      <div 
+        ref={dropZoneRef}
+        className="mx-auto max-w-3xl space-y-3"
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {/* Drag overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-2xl border-2 border-dashed border-primary">
+            <div className="flex flex-col items-center gap-2 text-primary">
+              <Upload className="h-8 w-8 animate-bounce" />
+              <span className="text-sm font-medium">Drop files here</span>
+            </div>
+          </div>
+        )}
+
         {/* Attached files preview */}
         {attachedFiles.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -101,8 +164,11 @@ export function ChatInput({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Message Dave 2.0..."
-            className="min-h-[52px] resize-none pr-14 rounded-2xl border-border bg-background"
+            placeholder="Message Dave 2.0... (drag & drop files here)"
+            className={cn(
+              "min-h-[52px] resize-none pr-14 rounded-2xl border-border bg-background transition-all",
+              isDragging && "border-primary ring-2 ring-primary/20"
+            )}
             rows={1}
             disabled={isLoading}
           />
