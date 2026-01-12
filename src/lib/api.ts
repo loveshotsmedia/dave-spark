@@ -170,17 +170,27 @@ class DaveAPI {
 
   // Status check
   async getStatus(): Promise<{ isNew: boolean; contactCount: number; appointmentCount: number }> {
-    try {
-      const response = await fetch(`${API_BASE}/status`, {
-        method: "GET",
-        headers: {
-          "x-owner-auth": this.getPassphrase() || "",
-        },
-      });
-      return response.json();
-    } catch {
-      return { isNew: true, contactCount: 0, appointmentCount: 0 };
+    const passphrase = this.getPassphrase();
+    if (!passphrase) {
+      throw new Error("Not authenticated");
     }
+
+    const response = await fetch(`${API_BASE}/status`, {
+      method: "GET",
+      headers: {
+        "x-owner-auth": passphrase,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        this.clearPassphrase();
+        throw new Error("Invalid passphrase");
+      }
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    return response.json();
   }
 }
 
