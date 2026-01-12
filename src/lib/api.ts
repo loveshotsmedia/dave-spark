@@ -1,4 +1,8 @@
 // Dave 2.0 API Client - Direct API calls with x-owner-auth header
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set worker path for PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const DAVE_API_BASE = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
 const AUTH_PASSPHRASE = "I love Cameron";
@@ -97,40 +101,55 @@ async function apiRequest<T>(
   return response.json() as Promise<T>;
 }
 
-// Helper to convert file to base64
-async function fileToBase64(file: File): Promise<{ name: string; type: string; data: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = (reader.result as string).split(",")[1];
-      resolve({
-        name: file.name,
-        type: file.type,
-        data: base64,
-      });
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+// Extract text from PDF files in the browser
+async function extractTextFromPDF(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item: unknown) => (item as { str: string }).str).join(' ');
+    fullText += pageText + '\n';
+  }
+  return fullText;
 }
 
-// Chat with optional file attachments
+// Chat with optional file attachments - PDFs are extracted and uploaded to knowledge base
 export async function chat(
   message: string,
   files?: File[]
-): Promise<{ response: string; context?: string }> {
-  // If no files, use simple JSON request
-  if (!files || files.length === 0) {
-    return apiRequest("/chat", "POST", { message });
+): Promise<{ response: string; context?: string; documentsUploaded?: number }> {
+  let documentsUploaded = 0;
+  
+  // If files attached, process them first
+  if (files && files.length > 0) {
+    for (const file of files) {
+      if (file.type === 'application/pdf') {
+        // Extract text from PDF
+        const content = await extractTextFromPDF(file);
+        
+        // Upload to knowledge base so chat can find it via RAG
+        await uploadKnowledge(
+          file.name.replace('.pdf', ''),
+          content,
+          'proposal',
+          ['uploaded', 'document']
+        );
+        documentsUploaded++;
+      }
+    }
+    
+    // Update message to reference the uploaded doc
+    if (documentsUploaded > 0) {
+      const fileNames = files.filter(f => f.type === 'application/pdf').map(f => f.name).join(', ');
+      message = `I just uploaded "${fileNames}". ${message}`;
+    }
   }
 
-  // Convert files to base64 and send as JSON
-  const fileData = await Promise.all(files.map(fileToBase64));
-  
-  return apiRequest("/chat", "POST", { 
-    message, 
-    files: fileData 
-  });
+  const response = await apiRequest<{ response: string; context?: string }>("/chat", "POST", { message });
+  return { ...response, documentsUploaded };
 }
 
 // Contacts
