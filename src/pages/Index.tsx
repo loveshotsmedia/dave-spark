@@ -4,22 +4,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
-  const { isAuthenticated, isLoading, onboardingComplete } = useAuth();
+  const { isLoading, onboardingComplete } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isLoading) {
-      if (isAuthenticated) {
-        if (onboardingComplete === false) {
-          navigate("/onboarding");
-        } else {
-          navigate("/chat");
-        }
+      if (onboardingComplete === false) {
+        navigate("/onboarding");
       } else {
-        navigate("/auth");
+        navigate("/chat");
       }
     }
-  }, [isAuthenticated, isLoading, onboardingComplete, navigate]);
+  }, [isLoading, onboardingComplete, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

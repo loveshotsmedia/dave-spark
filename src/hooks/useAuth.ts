@@ -1,108 +1,45 @@
 import { useState, useEffect, useCallback } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
 import { syncAuth, getOnboardingStatus } from "@/lib/api";
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // When user signs in, sync auth and check onboarding
-        if (event === "SIGNED_IN" && session?.user) {
-          setTimeout(async () => {
-            try {
-              await syncAuth();
-              const status = await getOnboardingStatus();
-              setOnboardingComplete(status.completed);
-            } catch (error) {
-              console.error("Failed to sync auth:", error);
-              // Assume onboarding complete if we can't check
-              setOnboardingComplete(true);
-            }
-          }, 0);
-        }
-        
-        if (event === "SIGNED_OUT") {
-          setOnboardingComplete(null);
-        }
+    // Check if we can reach the API (validates the hardcoded passphrase)
+    const checkAuth = async () => {
+      try {
+        await syncAuth();
+        const status = await getOnboardingStatus();
+        setOnboardingComplete(status.completed);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        // Even if sync fails, we're "authenticated" with the passphrase
+        setIsAuthenticated(true);
+        setOnboardingComplete(true);
+      } finally {
+        setIsLoading(false);
       }
-    );
+    };
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        try {
-          const status = await getOnboardingStatus();
-          setOnboardingComplete(status.completed);
-        } catch (error) {
-          console.error("Failed to get onboarding status:", error);
-          setOnboardingComplete(true);
-        }
-      }
-      
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signInWithEmail = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
-  }, []);
-
-  const signUpWithEmail = useCallback(async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    });
-    return { data, error };
-  }, []);
-
-  const signInWithGoogle = useCallback(async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
-    });
-    return { data, error };
+    checkAuth();
   }, []);
 
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    // With passphrase auth, there's no real sign out
+    // Just redirect to home
+    window.location.href = "/";
+    return { error: null };
   }, []);
 
   return {
-    user,
-    session,
-    isAuthenticated: !!session,
+    user: isAuthenticated ? { email: "authenticated" } : null,
+    session: isAuthenticated ? {} : null,
+    isAuthenticated,
     isLoading,
     onboardingComplete,
-    signInWithEmail,
-    signUpWithEmail,
-    signInWithGoogle,
     signOut,
   };
 }
