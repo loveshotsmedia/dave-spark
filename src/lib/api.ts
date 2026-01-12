@@ -97,9 +97,41 @@ async function apiRequest<T>(
   return response.json() as Promise<T>;
 }
 
-// Chat
-export async function chat(message: string): Promise<{ response: string; context?: string }> {
-  return apiRequest("/chat", "POST", { message });
+// Chat with optional file attachments
+export async function chat(
+  message: string,
+  files?: File[]
+): Promise<{ response: string; context?: string }> {
+  // If no files, use simple JSON request
+  if (!files || files.length === 0) {
+    return apiRequest("/chat", "POST", { message });
+  }
+
+  // With files, use FormData
+  const formData = new FormData();
+  formData.append("message", message);
+  
+  files.forEach((file, index) => {
+    formData.append(`file_${index}`, file, file.name);
+  });
+
+  const url = `${DAVE_API_BASE}/chat`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "x-owner-auth": AUTH_PASSPHRASE,
+      // Don't set Content-Type - browser will set it with boundary for FormData
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("API Error:", response.status, errorText);
+    throw new Error(`API request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<{ response: string; context?: string }>;
 }
 
 // Contacts

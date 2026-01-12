@@ -63,7 +63,7 @@ export default function Chat() {
   };
 
   const handleProposalGenerated = (proposal: string, contactName: string) => {
-    sendMessage(`Generated proposal for ${contactName}:\n\n${proposal}`);
+    sendMessage(`Generated proposal for ${contactName}:\n\n${proposal}`, undefined);
   };
 
   const handleContactSelect = (contact: Contact) => {
