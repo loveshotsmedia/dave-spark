@@ -1,5 +1,7 @@
-// Dave 2.0 API Client - Uses Supabase Edge Function Proxy
-import { supabase } from "@/integrations/supabase/client";
+// Dave 2.0 API Client - Direct API calls with x-owner-auth header
+
+const DAVE_API_BASE = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
+const AUTH_PASSPHRASE = "I love Cameron";
 
 export interface Message {
   role: "user" | "assistant";
@@ -69,22 +71,30 @@ export interface OnboardingStatus {
   };
 }
 
-// API Proxy helper - all requests go through the edge function
+// Direct API helper - all requests go to Dave 2.0 API with x-owner-auth header
 async function apiRequest<T>(
   endpoint: string,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
   body?: unknown
 ): Promise<T> {
-  const { data, error } = await supabase.functions.invoke("api-proxy", {
-    body: { endpoint, method, body },
+  const url = `${DAVE_API_BASE}${endpoint}`;
+  
+  const response = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "x-owner-auth": AUTH_PASSPHRASE,
+    },
+    body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (error) {
-    console.error("API Error:", error);
-    throw new Error(error.message || "API request failed");
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("API Error:", response.status, errorText);
+    throw new Error(`API request failed: ${response.status}`);
   }
 
-  return data as T;
+  return response.json() as Promise<T>;
 }
 
 // Auth
