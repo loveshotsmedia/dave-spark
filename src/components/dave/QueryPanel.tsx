@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SlidePanel } from "./SlidePanel";
-import { api, Contact } from "@/lib/api";
+import { searchContacts, Contact } from "@/lib/api";
 import { ContactCard } from "./ContactCard";
 
 interface QueryPanelProps {
@@ -32,7 +32,7 @@ export function QueryPanel({ isOpen, onClose, onContactSelect }: QueryPanelProps
   const handleSearch = async () => {
     setIsSearching(true);
     try {
-      const { contacts } = await api.searchContacts(searchQuery || "*");
+      const { contacts } = await searchContacts(searchQuery || "*");
       // Apply client-side filters
       const filtered = contacts.filter((contact) => {
         // Net worth filter

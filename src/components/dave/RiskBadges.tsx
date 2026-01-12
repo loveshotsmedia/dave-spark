@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { api, Risk } from "@/lib/api";
+import { getRisks, Risk } from "@/lib/api";
 
 export function RiskBadges() {
   const [risks, setRisks] = useState<Risk[]>([]);
@@ -15,7 +15,7 @@ export function RiskBadges() {
   useEffect(() => {
     const fetchRisks = async () => {
       try {
-        const { risks } = await api.getRisks();
+        const { risks } = await getRisks();
         setRisks(risks);
       } catch (error) {
         // Silently fail - risks are not critical

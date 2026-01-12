@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { api, Suggestion } from "@/lib/api";
+import { getAnticipatoryActions, Suggestion } from "@/lib/api";
 
 interface AnticipatoryActionsProps {
   onActionSelect: (action: string) => void;
@@ -15,7 +15,7 @@ export function AnticipatoryActions({ onActionSelect }: AnticipatoryActionsProps
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
-        const { suggestions } = await api.getAnticipatoryActions();
+        const { suggestions } = await getAnticipatoryActions();
         setSuggestions(suggestions);
       } catch (error) {
         // Provide fallback suggestions

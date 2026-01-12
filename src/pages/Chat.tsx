@@ -14,9 +14,10 @@ import { SettingsPanel } from "@/components/dave/SettingsPanel";
 import { PreCallModal } from "@/components/dave/PreCallModal";
 import { DocumentCallModal } from "@/components/dave/DocumentCallModal";
 import { Contact } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
 export default function Chat() {
-  const { isAuthenticated, isLoading: authLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, onboardingComplete, signOut } = useAuth();
   const { messages, isLoading, sendMessage } = useChat();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -37,19 +38,23 @@ export default function Chat() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate("/");
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        navigate("/auth");
+      } else if (onboardingComplete === false) {
+        navigate("/onboarding");
+      }
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isAuthenticated, authLoading, onboardingComplete, navigate]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
   };
 
   const handleGenerateProposal = (contactId: string) => {
@@ -72,7 +77,7 @@ export default function Chat() {
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }

@@ -3,7 +3,7 @@ import { X, FileText, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/api";
+import { documentCall } from "@/lib/api";
 
 interface DocumentCallModalProps {
   contactId: string;
@@ -35,7 +35,7 @@ export function DocumentCallModal({
 
     setIsProcessing(true);
     try {
-      const data = await api.documentCall(contactId, transcript);
+      const data = await documentCall(contactId, transcript);
       setResult(data);
     } catch (error) {
       console.error("Failed to document call:", error);

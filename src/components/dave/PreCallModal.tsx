@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, PhoneCall, AlertTriangle, Target, Loader2, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
+import { getPreCallBriefing } from "@/lib/api";
 
 interface PreCallModalProps {
   contactId: string;
@@ -28,7 +28,7 @@ export function PreCallModal({ contactId, contactName, isOpen, onClose }: PreCal
   const fetchBriefing = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getPreCallBriefing(contactId);
+      const data = await getPreCallBriefing(contactId);
       setBriefing(data);
     } catch (error) {
       console.error("Failed to fetch briefing:", error);
