@@ -102,13 +102,27 @@ async function apiRequest<T>(
   return response.json() as Promise<T>;
 }
 
-// Extract text from PDF files in the browser
-async function extractTextFromPDF(file: File): Promise<string> {
+// Progress callback type for extraction updates
+export type ExtractionProgress = {
+  stage: 'extracting' | 'uploading' | 'complete';
+  fileName: string;
+  currentPage?: number;
+  totalPages?: number;
+  fileIndex: number;
+  totalFiles: number;
+};
+
+// Extract text from PDF files in the browser with progress callback
+async function extractTextFromPDF(
+  file: File, 
+  onProgress?: (current: number, total: number) => void
+): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   
   let fullText = '';
   for (let i = 1; i <= pdf.numPages; i++) {
+    onProgress?.(i, pdf.numPages);
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
     const pageText = textContent.items.map((item: unknown) => (item as { str: string }).str).join(' ');
@@ -120,31 +134,66 @@ async function extractTextFromPDF(file: File): Promise<string> {
 // Chat with optional file attachments - PDFs are extracted and uploaded to knowledge base
 export async function chat(
   message: string,
-  files?: File[]
+  files?: File[],
+  onProgress?: (progress: ExtractionProgress) => void
 ): Promise<{ response: string; context?: string; documentsUploaded?: number }> {
   let documentsUploaded = 0;
   
   // If files attached, process them first
   if (files && files.length > 0) {
-    for (const file of files) {
-      if (file.type === 'application/pdf') {
-        // Extract text from PDF
-        const content = await extractTextFromPDF(file);
-        
-        // Upload to knowledge base so chat can find it via RAG
-        await uploadKnowledge(
-          file.name.replace('.pdf', ''),
-          content,
-          'proposal',
-          ['uploaded', 'document']
-        );
-        documentsUploaded++;
-      }
+    const pdfFiles = files.filter(f => f.type === 'application/pdf');
+    
+    for (let fileIdx = 0; fileIdx < pdfFiles.length; fileIdx++) {
+      const file = pdfFiles[fileIdx];
+      
+      // Extract text from PDF with progress
+      onProgress?.({
+        stage: 'extracting',
+        fileName: file.name,
+        currentPage: 0,
+        totalPages: 0,
+        fileIndex: fileIdx + 1,
+        totalFiles: pdfFiles.length,
+      });
+      
+      const content = await extractTextFromPDF(file, (currentPage, totalPages) => {
+        onProgress?.({
+          stage: 'extracting',
+          fileName: file.name,
+          currentPage,
+          totalPages,
+          fileIndex: fileIdx + 1,
+          totalFiles: pdfFiles.length,
+        });
+      });
+      
+      // Upload to knowledge base
+      onProgress?.({
+        stage: 'uploading',
+        fileName: file.name,
+        fileIndex: fileIdx + 1,
+        totalFiles: pdfFiles.length,
+      });
+      
+      await uploadKnowledge(
+        file.name.replace('.pdf', ''),
+        content,
+        'proposal',
+        ['uploaded', 'document']
+      );
+      documentsUploaded++;
     }
+    
+    onProgress?.({
+      stage: 'complete',
+      fileName: '',
+      fileIndex: pdfFiles.length,
+      totalFiles: pdfFiles.length,
+    });
     
     // Update message to reference the uploaded doc
     if (documentsUploaded > 0) {
-      const fileNames = files.filter(f => f.type === 'application/pdf').map(f => f.name).join(', ');
+      const fileNames = pdfFiles.map(f => f.name).join(', ');
       message = `I just uploaded "${fileNames}". ${message}`;
     }
   }

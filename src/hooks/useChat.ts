@@ -1,11 +1,12 @@
 import { useState, useCallback } from "react";
-import { Message, chat } from "@/lib/api";
+import { Message, chat, ExtractionProgress } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
 export interface ChatMessage extends Message {
   id: string;
   timestamp: Date;
   isLoading?: boolean;
+  extractionProgress?: ExtractionProgress;
   embeddedData?: {
     type: "contacts" | "appointments" | "tasks" | "proposal";
     data: unknown;
@@ -40,8 +41,9 @@ export function useChat() {
       timestamp: new Date(),
     };
 
+    const loadingMessageId = `loading-${Date.now()}`;
     const loadingMessage: ChatMessage = {
-      id: `loading-${Date.now()}`,
+      id: loadingMessageId,
       role: "assistant",
       content: "",
       timestamp: new Date(),
@@ -52,7 +54,18 @@ export function useChat() {
     setIsLoading(true);
 
     try {
-      const response = await chat(content, files);
+      // Progress callback to update loading message
+      const onProgress = (progress: ExtractionProgress) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === loadingMessageId
+              ? { ...m, extractionProgress: progress }
+              : m
+          )
+        );
+      };
+
+      const response = await chat(content, files, onProgress);
 
       // Show toast if documents were uploaded to knowledge base
       if (response.documentsUploaded && response.documentsUploaded > 0) {
