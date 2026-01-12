@@ -42,12 +42,7 @@ export function useChat() {
     setIsLoading(true);
 
     try {
-      const allMessages = messages
-        .filter((m) => !m.isLoading)
-        .map((m) => ({ role: m.role, content: m.content }));
-      allMessages.push({ role: "user", content });
-
-      const response = await chat(allMessages);
+      const response = await chat(content);
 
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,

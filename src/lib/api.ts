@@ -107,8 +107,8 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus> {
 }
 
 // Chat
-export async function chat(messages: Message[]): Promise<{ response: string; context?: string }> {
-  return apiRequest("/api/chat", "POST", { messages });
+export async function chat(message: string): Promise<{ response: string; context?: string }> {
+  return apiRequest("/chat", "POST", { message });
 }
 
 // Contacts
