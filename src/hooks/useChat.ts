@@ -22,11 +22,20 @@ export function useChat() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, files?: File[]) => {
+    // Build user message content with file info if attached
+    let displayContent = content;
+    if (files && files.length > 0) {
+      const fileNames = files.map(f => f.name).join(", ");
+      displayContent = content 
+        ? `${content}\n\n📎 Attached: ${fileNames}`
+        : `📎 Attached: ${fileNames}`;
+    }
+
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
-      content,
+      content: displayContent,
       timestamp: new Date(),
     };
 
@@ -42,7 +51,7 @@ export function useChat() {
     setIsLoading(true);
 
     try {
-      const response = await chat(content);
+      const response = await chat(content, files);
 
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
