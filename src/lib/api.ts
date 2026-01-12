@@ -1,108 +1,31 @@
-// Dave 2.0 API Client - Direct API calls with x-owner-auth header
+// Dave 2.0 API Client for Lovable Frontend
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 // Set worker path for PDF.js using the bundled worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-const DAVE_API_BASE = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
-const AUTH_PASSPHRASE = "I love Cameron";
+const API_BASE = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
 
-export interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export interface Contact {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-  title?: string;
-  netWorth?: number;
-  status?: "Lead" | "Client" | "Whale";
-  tags?: string[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface Appointment {
-  id: string;
-  title: string;
-  contactId?: string;
-  contactName?: string;
-  startTime: string;
-  endTime?: string;
-  type: "video" | "phone" | "in-person";
-  location?: string;
-  notes?: string;
-}
-
-export interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  dueDate?: string;
-  status: "pending" | "completed" | "overdue";
-  priority: "low" | "medium" | "high";
-  contactId?: string;
-  contactName?: string;
-}
-
-export interface Risk {
-  id: string;
-  type: "cold_lead" | "overdue_task" | "at_risk_client" | "no_prep";
-  severity: "critical" | "warning";
-  title: string;
-  description: string;
-  contactId?: string;
-  contactName?: string;
-}
-
-export interface Suggestion {
-  id: string;
-  action: string;
-  description: string;
-  icon: string;
-  priority: number;
-}
-
-export interface OnboardingStatus {
-  completed: boolean;
-  steps?: {
-    profile?: boolean;
-    preferences?: boolean;
-  };
-}
-
-// Direct API helper - all requests go to Dave 2.0 API with x-owner-auth header
-async function apiRequest<T>(
-  endpoint: string,
-  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
-  body?: unknown
-): Promise<T> {
-  const url = `${DAVE_API_BASE}${endpoint}`;
-  
-  const response = await fetch(url, {
+async function apiRequest<T>(endpoint: string, method = "POST", body?: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE}/${endpoint}`, {
     method,
     headers: {
       "Content-Type": "application/json",
-      "x-owner-auth": AUTH_PASSPHRASE,
+      "x-owner-auth": "I love Cameron",
     },
     body: body ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("API Error:", response.status, errorText);
-    throw new Error(`API request failed: ${response.status}`);
+    const error = await response.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || `API error: ${response.status}`);
   }
 
-  return response.json() as Promise<T>;
+  return response.json();
 }
 
-// Progress callback type for extraction updates
+// ========== PDF EXTRACTION ==========
 export type ExtractionProgress = {
   stage: 'extracting' | 'uploading' | 'complete';
   fileName: string;
@@ -112,14 +35,13 @@ export type ExtractionProgress = {
   totalFiles: number;
 };
 
-// Extract text from PDF files in the browser with progress callback
 async function extractTextFromPDF(
-  file: File, 
+  file: File,
   onProgress?: (current: number, total: number) => void
 ): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  
+
   let fullText = '';
   for (let i = 1; i <= pdf.numPages; i++) {
     onProgress?.(i, pdf.numPages);
@@ -131,22 +53,32 @@ async function extractTextFromPDF(
   return fullText;
 }
 
-// Chat with optional file attachments - PDFs are extracted and uploaded to knowledge base
+// ========== CHAT ==========
+export interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatFile {
+  name: string;
+  type: string;
+  content: string;
+}
+
 export async function chat(
   message: string,
   files?: File[],
   onProgress?: (progress: ExtractionProgress) => void
 ): Promise<{ response: string; context?: string; documentsUploaded?: number }> {
   let documentsUploaded = 0;
-  
-  // If files attached, process them first
+  const processedFiles: ChatFile[] = [];
+
   if (files && files.length > 0) {
     const pdfFiles = files.filter(f => f.type === 'application/pdf');
-    
+
     for (let fileIdx = 0; fileIdx < pdfFiles.length; fileIdx++) {
       const file = pdfFiles[fileIdx];
-      
-      // Extract text from PDF with progress
+
       onProgress?.({
         stage: 'extracting',
         fileName: file.name,
@@ -155,7 +87,7 @@ export async function chat(
         fileIndex: fileIdx + 1,
         totalFiles: pdfFiles.length,
       });
-      
+
       const content = await extractTextFromPDF(file, (currentPage, totalPages) => {
         onProgress?.({
           stage: 'extracting',
@@ -166,94 +98,205 @@ export async function chat(
           totalFiles: pdfFiles.length,
         });
       });
-      
-      // Upload to knowledge base
+
       onProgress?.({
         stage: 'uploading',
         fileName: file.name,
         fileIndex: fileIdx + 1,
         totalFiles: pdfFiles.length,
       });
-      
+
       await uploadKnowledge(
         file.name.replace('.pdf', ''),
         content,
         'proposal',
-        ['uploaded', 'document']
+        { tags: ['uploaded', 'document'] }
       );
+      
+      processedFiles.push({
+        name: file.name,
+        type: file.type,
+        content: content.substring(0, 5000),
+      });
+      
       documentsUploaded++;
     }
-    
+
     onProgress?.({
       stage: 'complete',
       fileName: '',
       fileIndex: pdfFiles.length,
       totalFiles: pdfFiles.length,
     });
-    
-    // Update message to reference the uploaded doc
+
     if (documentsUploaded > 0) {
       const fileNames = pdfFiles.map(f => f.name).join(', ');
       message = `I just uploaded "${fileNames}". ${message}`;
     }
   }
 
-  const response = await apiRequest<{ response: string; context?: string }>("/chat", "POST", { message });
+  const response = await apiRequest<{ response: string; context?: string }>("chat", "POST", {
+    message,
+    files: processedFiles.length > 0 ? processedFiles : undefined,
+  });
+  
   return { ...response, documentsUploaded };
 }
 
-// Contacts
+// ========== CONTACTS ==========
+export interface Contact {
+  id: string;
+  first_name: string;
+  last_name?: string;
+  full_name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  title?: string;
+  status?: string;
+  net_worth?: number;
+  tags?: string[];
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function searchContacts(query: string): Promise<{ contacts: Contact[] }> {
-  return apiRequest("/contacts/search", "POST", { query });
+  return apiRequest("contacts/search", "POST", { query });
 }
 
-export async function getContact(id: string): Promise<{ contact: Contact; clientFile?: unknown }> {
-  return apiRequest("/contacts/get", "POST", { id });
+export async function getContact(id: string): Promise<{ contact: Contact; clientFile: unknown }> {
+  return apiRequest("contacts/get", "POST", { id });
 }
 
-// Appointments
-export async function getAppointments(limit?: number): Promise<{ appointments: Appointment[] }> {
-  return apiRequest("/appointments", "POST", { limit: limit || 10 });
+export async function quickAddContact(description: string): Promise<{ success: boolean; contact?: Contact; message: string }> {
+  return apiRequest("quick-add", "POST", { description });
 }
 
-// Tasks
-export async function getTasks(status?: string): Promise<{ tasks: Task[] }> {
-  return apiRequest("/tasks", "POST", { status });
+// ========== APPOINTMENTS ==========
+export interface Appointment {
+  id: string;
+  contact_id?: string;
+  title?: string;
+  start_time: string;
+  scheduled_at: string;
+  duration_minutes?: number;
+  location?: string;
+  notes?: string;
+  contacts?: { full_name: string; email?: string; phone?: string };
 }
 
-// Alien Features
-export async function getPreCallBriefing(contactId: string): Promise<{
-  briefing: string;
-  keyPoints: string[];
-  landmines: string[];
-  bestOutcome: string;
-}> {
-  return apiRequest("/alien/precall", "POST", { contactId });
+export async function getAppointments(options?: {
+  contactId?: string;
+  upcoming?: boolean;
+  limit?: number;
+}): Promise<{ appointments: Appointment[] }> {
+  return apiRequest("appointments", "POST", options || {});
 }
 
-export async function getAnticipatoryActions(): Promise<{ suggestions: Suggestion[] }> {
-  return apiRequest("/alien/anticipate", "POST", {});
+// ========== TASKS ==========
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority?: string;
+  due_date?: string;
+  contact_id?: string;
+  contacts?: { full_name: string };
 }
 
-export async function documentCall(
-  contactId: string,
-  transcript: string
-): Promise<{
+export async function getTasks(options?: {
+  status?: string;
+  contactId?: string;
+  limit?: number;
+}): Promise<{ tasks: Task[] }> {
+  return apiRequest("tasks", "POST", options || {});
+}
+
+// ========== ALIEN FEATURES ==========
+export interface Suggestion {
+  action: string;
+  reason: string;
+  priority: "high" | "medium" | "low";
+}
+
+export interface Risk {
+  severity: "critical" | "warning" | "info";
+  type: string;
+  description: string;
+  contactName?: string;
+  recommendedAction: string;
+}
+
+export async function getPreCallBriefing(contactId: string): Promise<{ briefing: string }> {
+  return apiRequest("alien/precall", "POST", { contactId });
+}
+
+export async function getAnticipatoryActions(context?: {
+  lastAction?: string;
+  currentScreen?: string;
+  currentContactId?: string;
+}): Promise<{ suggestions: Suggestion[] }> {
+  return apiRequest("alien/anticipate", "POST", { context: context || {} });
+}
+
+export async function documentCall(transcript: string, contactId?: string): Promise<{
   summary: string;
   keyPoints: string[];
-  actionItems: string[];
-  sentiment: string;
-  followUpDate: string;
+  actionItems: Array<{ task: string; owner: string; deadline?: string }>;
+  sentiment: "positive" | "neutral" | "negative";
+  followUpDate?: string;
+  tags: string[];
 }> {
-  return apiRequest("/alien/document", "POST", { contactId, transcript });
+  return apiRequest("alien/document", "POST", { transcript, contactId });
 }
 
 export async function getRisks(): Promise<{ risks: Risk[] }> {
-  return apiRequest("/alien/risks", "POST", {});
+  return apiRequest("alien/risks", "POST", {});
 }
 
-// ================== Knowledge Base ==================
+export async function getRelationships(query: string): Promise<{ analysis: string }> {
+  return apiRequest("alien/relationships", "POST", { query });
+}
 
+export async function getSentimentTrajectory(contactId: string): Promise<{ analysis: string }> {
+  return apiRequest("alien/sentiment", "POST", { contactId });
+}
+
+export async function orchestrate(command: string): Promise<{
+  interpretation: string;
+  actions: Array<{ type: string; details: string; status: string }>;
+  summary: string;
+}> {
+  return apiRequest("alien/orchestrate", "POST", { command });
+}
+
+export async function getOpportunities(): Promise<{
+  opportunities: Array<{
+    type: string;
+    description: string;
+    contactName: string;
+    potentialValue: string;
+    suggestedAction: string;
+    confidence: "high" | "medium" | "low";
+  }>;
+}> {
+  return apiRequest("alien/opportunities", "POST", {});
+}
+
+export async function analyzeCounterfactual(scenario: string): Promise<{ analysis: string }> {
+  return apiRequest("alien/counterfactual", "POST", { scenario });
+}
+
+export async function getDraft(recipientId: string, purpose: string, keyPoints: string[]): Promise<{
+  draft: string;
+  styleNotes: string;
+}> {
+  return apiRequest("alien/draft", "POST", { recipientId, purpose, keyPoints });
+}
+
+// ========== KNOWLEDGE BASE ==========
 export interface KnowledgeEntry {
   id: string;
   title: string;
@@ -267,22 +310,36 @@ export interface KnowledgeEntry {
 export async function uploadKnowledge(
   title: string,
   content: string,
-  sourceType = "manual_entry",
-  tags: string[] = []
-): Promise<{ success: boolean; id?: string; error?: string }> {
-  return apiRequest("/knowledge/upload", "POST", { title, content, sourceType, tags });
+  sourceType?: string,
+  metadata?: {
+    fileName?: string;
+    fileType?: string;
+    tags?: string[];
+    clientSpecific?: boolean;
+    relatedContactId?: string;
+  }
+): Promise<{ success: boolean; id?: string; message: string }> {
+  return apiRequest("knowledge/upload", "POST", {
+    title,
+    content,
+    sourceType: sourceType || "manual_entry",
+    ...metadata,
+  });
 }
 
-export async function searchKnowledge(query: string): Promise<{ results: KnowledgeEntry[] }> {
-  return apiRequest("/knowledge/search", "POST", { query });
+export async function listKnowledge(options?: {
+  category?: string;
+  sourceType?: string;
+  limit?: number;
+}): Promise<{ entries: KnowledgeEntry[] }> {
+  return apiRequest("knowledge/list", "POST", options || {});
 }
 
-export async function listKnowledge(): Promise<{ entries: KnowledgeEntry[] }> {
-  return apiRequest("/knowledge/list", "POST", {});
+export async function searchKnowledge(query: string, limit?: number): Promise<{ results: KnowledgeEntry[] }> {
+  return apiRequest("knowledge/search", "POST", { query, limit });
 }
 
-// ================== Canadian Financial Data ==================
-
+// ========== CANADIAN FINANCIAL DATA ==========
 export interface FinancialData {
   bankOfCanadaRate: number;
   primeRate: number;
@@ -291,42 +348,67 @@ export interface FinancialData {
 }
 
 export interface ContributionLimits {
+  rrsp: { limit: number; rate: number };
+  tfsa: { limit: number; cumulative: number };
+  fhsa: { annual: number; lifetime: number };
+  cpp: { max_pensionable: number; max_contribution: number };
   year: number;
-  rrsp: number;
-  tfsa: number;
-  fhsa: number;
-  cppMax: number;
-  lcge: number;
 }
 
-export async function getFinancialData(): Promise<FinancialData> {
-  return apiRequest("/financial/current", "POST", {});
+export async function getFinancialData(): Promise<{ data: FinancialData }> {
+  return apiRequest("financial/current", "POST", {});
+}
+
+export async function getTaxBrackets(): Promise<{ federal: unknown[]; year: number }> {
+  return apiRequest("financial/tax-brackets", "POST", {});
 }
 
 export async function getContributionLimits(): Promise<ContributionLimits> {
-  return apiRequest("/financial/contribution-limits", "POST", {});
+  return apiRequest("financial/contribution-limits", "POST", {});
 }
 
-// ================== GAAR Compliance ==================
-
+// ========== COMPLIANCE ==========
 export interface ComplianceCheck {
   warning: boolean;
-  level: "none" | "caution" | "warning" | "critical";
+  triggered_keywords?: string[];
+  relevant_rules?: unknown[];
+  recommendation?: string;
   message?: string;
-  details?: string[];
 }
 
 export interface ComplianceAnalysis {
-  risk: "low" | "medium" | "high";
-  factors: string[];
-  recommendations: string[];
-  gaarApplicable: boolean;
+  gaarAlert: unknown;
+  relatedRules: unknown[];
+  analysis: string;
 }
 
 export async function checkCompliance(message: string): Promise<ComplianceCheck> {
-  return apiRequest("/compliance/check", "POST", { message });
+  return apiRequest("compliance/check", "POST", { message });
+}
+
+export async function getComplianceRules(ruleType?: string): Promise<{ rules: unknown[] }> {
+  return apiRequest("compliance/rules", "POST", { ruleType });
 }
 
 export async function analyzeCompliance(scenario: string): Promise<ComplianceAnalysis> {
-  return apiRequest("/compliance/analyze", "POST", { scenario });
+  return apiRequest("compliance/analyze", "POST", { scenario });
+}
+
+// ========== SYSTEM ==========
+export async function getSystemStatus(): Promise<{
+  isNewAccount: boolean;
+  contactCount: number;
+  appointmentCount: number;
+  taskCount: number;
+  suggestions: string[];
+}> {
+  return apiRequest("status", "POST", {});
+}
+
+export async function bootstrapSampleData(): Promise<{
+  success: boolean;
+  message: string;
+  created: { contacts?: number; tasks?: number; appointments?: number };
+}> {
+  return apiRequest("bootstrap", "POST", {});
 }

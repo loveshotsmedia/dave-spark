@@ -23,7 +23,7 @@ export function TaxReferenceCard({ compact = false }: TaxReferenceCardProps) {
         getFinancialData(),
       ]);
       setLimits(limitsResult);
-      setFinancialData(financialResult);
+      setFinancialData(financialResult.data);
     } catch (err) {
       console.error("Failed to fetch financial data:", err);
       setError("Failed to load tax reference data");
@@ -74,11 +74,10 @@ export function TaxReferenceCard({ compact = false }: TaxReferenceCardProps) {
   }
 
   const contributionItems = limits ? [
-    { label: "RRSP Limit", value: formatCurrency(limits.rrsp), color: "text-blue-500" },
-    { label: "TFSA Limit", value: formatCurrency(limits.tfsa), color: "text-green-500" },
-    { label: "FHSA Limit", value: formatCurrency(limits.fhsa), color: "text-purple-500" },
-    { label: "CPP Max Earnings", value: formatCurrency(limits.cppMax), color: "text-orange-500" },
-    { label: "LCGE", value: formatCurrency(limits.lcge), color: "text-cyan-500" },
+    { label: "RRSP Limit", value: formatCurrency(limits.rrsp.limit), color: "text-blue-500" },
+    { label: "TFSA Limit", value: formatCurrency(limits.tfsa.limit), color: "text-green-500" },
+    { label: "FHSA Limit", value: formatCurrency(limits.fhsa.annual), color: "text-purple-500" },
+    { label: "CPP Max Earnings", value: formatCurrency(limits.cpp.max_pensionable), color: "text-orange-500" },
   ] : [];
 
   const rateItems = financialData ? [

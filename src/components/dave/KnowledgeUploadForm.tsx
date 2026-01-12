@@ -36,7 +36,7 @@ export function KnowledgeUploadForm({ onSuccess, onCancel }: KnowledgeUploadForm
 
     setIsLoading(true);
     try {
-      const result = await uploadKnowledge(title, content, "manual_entry", selectedTags);
+      const result = await uploadKnowledge(title, content, "manual_entry", { tags: selectedTags });
       
       if (result.success) {
         toast.success("Knowledge entry uploaded successfully");
@@ -45,7 +45,7 @@ export function KnowledgeUploadForm({ onSuccess, onCancel }: KnowledgeUploadForm
         setSelectedTags([]);
         onSuccess?.();
       } else {
-        toast.error(result.error || "Failed to upload knowledge entry");
+        toast.error(result.message || "Failed to upload knowledge entry");
       }
     } catch (error) {
       console.error("Upload error:", error);

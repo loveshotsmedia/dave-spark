@@ -9,7 +9,7 @@ interface AnticipatoryActionsProps {
 
 export function AnticipatoryActions({ onActionSelect }: AnticipatoryActionsProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +36,7 @@ export function AnticipatoryActions({ onActionSelect }: AnticipatoryActionsProps
   }, []);
 
   const visibleSuggestions = suggestions
-    .filter((s) => !dismissed.has(s.id))
+    .filter((_, idx) => !dismissed.has(idx))
     .slice(0, 3);
 
   // Don't show anything while loading
@@ -74,9 +74,9 @@ export function AnticipatoryActions({ onActionSelect }: AnticipatoryActionsProps
       <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur-sm border shadow-lg px-2 py-1.5">
         <Sparkles className="h-4 w-4 text-primary ml-2" />
         
-        {visibleSuggestions.map((suggestion) => (
+        {suggestions.slice(0, 3).map((suggestion, idx) => !dismissed.has(idx) && (
           <div
-            key={suggestion.id}
+            key={idx}
             className="flex items-center gap-1 animate-pulse-subtle"
           >
             <Button
@@ -85,13 +85,12 @@ export function AnticipatoryActions({ onActionSelect }: AnticipatoryActionsProps
               onClick={() => onActionSelect(suggestion.action)}
               className="rounded-full text-sm px-3 py-1 h-auto hover:bg-primary/10"
             >
-              <span className="mr-1">{suggestion.icon}</span>
               {suggestion.action}
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setDismissed((prev) => new Set([...prev, suggestion.id]))}
+              onClick={() => setDismissed((prev) => new Set([...prev, idx]))}
               className="h-5 w-5 rounded-full text-muted-foreground hover:text-foreground"
             >
               <X className="h-3 w-3" />

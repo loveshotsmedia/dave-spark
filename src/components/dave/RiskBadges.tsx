@@ -60,9 +60,9 @@ export function RiskBadges() {
         <div className="space-y-3">
           <h4 className="font-medium">Attention Required</h4>
           <div className="space-y-2">
-            {risks.map((risk) => (
+            {risks.map((risk, idx) => (
               <div
-                key={risk.id}
+                key={idx}
                 className={`rounded-lg border p-3 ${
                   risk.severity === "critical"
                     ? "border-destructive/30 bg-destructive/5"
@@ -76,7 +76,7 @@ export function RiskBadges() {
                     <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
                   )}
                   <div>
-                    <p className="text-sm font-medium">{risk.title}</p>
+                    <p className="text-sm font-medium">{risk.type}</p>
                     <p className="text-xs text-muted-foreground">
                       {risk.description}
                     </p>

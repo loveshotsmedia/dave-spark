@@ -65,9 +65,9 @@ export function ProposalPanel({
     setIsGenerating(true);
     try {
       // Use chat endpoint to generate proposals
-      const message = `Generate a ${proposalType} proposal for ${selectedContact.name}${additionalContext ? `. Additional context: ${additionalContext}` : ''}`;
+      const message = `Generate a ${proposalType} proposal for ${selectedContact.full_name}${additionalContext ? `. Additional context: ${additionalContext}` : ''}`;
       const { response } = await chat(message);
-      onProposalGenerated(response, selectedContact.name);
+      onProposalGenerated(response, selectedContact.full_name);
       onClose();
       resetForm();
     } catch (error) {

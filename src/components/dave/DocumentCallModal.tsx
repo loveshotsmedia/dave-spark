@@ -25,9 +25,10 @@ export function DocumentCallModal({
   const [result, setResult] = useState<{
     summary: string;
     keyPoints: string[];
-    actionItems: string[];
+    actionItems: Array<{ task: string; owner: string; deadline?: string }>;
     sentiment: string;
-    followUpDate: string;
+    followUpDate?: string;
+    tags?: string[];
   } | null>(null);
 
   const handleProcess = async () => {
@@ -35,8 +36,11 @@ export function DocumentCallModal({
 
     setIsProcessing(true);
     try {
-      const data = await documentCall(contactId, transcript);
-      setResult(data);
+      const data = await documentCall(transcript, contactId);
+      setResult({
+        ...data,
+        followUpDate: data.followUpDate || undefined,
+      });
     } catch (error) {
       console.error("Failed to document call:", error);
     } finally {
@@ -153,7 +157,10 @@ export function DocumentCallModal({
                           className="flex items-start gap-2 text-sm text-muted-foreground"
                         >
                           <CheckCircle className="mt-0.5 h-4 w-4 text-success shrink-0" />
-                          {item}
+                          <span>
+                            {item.task}
+                            {item.owner && <span className="text-xs ml-1">({item.owner})</span>}
+                          </span>
                         </li>
                       ))}
                     </ul>
