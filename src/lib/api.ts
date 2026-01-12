@@ -97,6 +97,23 @@ async function apiRequest<T>(
   return response.json() as Promise<T>;
 }
 
+// Helper to convert file to base64
+async function fileToBase64(file: File): Promise<{ name: string; type: string; data: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      resolve({
+        name: file.name,
+        type: file.type,
+        data: base64,
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 // Chat with optional file attachments
 export async function chat(
   message: string,
@@ -107,31 +124,13 @@ export async function chat(
     return apiRequest("/chat", "POST", { message });
   }
 
-  // With files, use FormData
-  const formData = new FormData();
-  formData.append("message", message);
+  // Convert files to base64 and send as JSON
+  const fileData = await Promise.all(files.map(fileToBase64));
   
-  files.forEach((file, index) => {
-    formData.append(`file_${index}`, file, file.name);
+  return apiRequest("/chat", "POST", { 
+    message, 
+    files: fileData 
   });
-
-  const url = `${DAVE_API_BASE}/chat`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "x-owner-auth": AUTH_PASSPHRASE,
-      // Don't set Content-Type - browser will set it with boundary for FormData
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("API Error:", response.status, errorText);
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  return response.json() as Promise<{ response: string; context?: string }>;
 }
 
 // Contacts
