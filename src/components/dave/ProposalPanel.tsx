@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SlidePanel } from "./SlidePanel";
-import { searchContacts, generateProposal, Contact } from "@/lib/api";
+import { searchContacts, chat, Contact } from "@/lib/api";
 import { ContactCard } from "./ContactCard";
 
 const PROPOSAL_TYPES = [
@@ -64,12 +64,10 @@ export function ProposalPanel({
 
     setIsGenerating(true);
     try {
-      const { proposal } = await generateProposal(
-        selectedContact.id,
-        proposalType,
-        additionalContext
-      );
-      onProposalGenerated(proposal, selectedContact.name);
+      // Use chat endpoint to generate proposals
+      const message = `Generate a ${proposalType} proposal for ${selectedContact.name}${additionalContext ? `. Additional context: ${additionalContext}` : ''}`;
+      const { response } = await chat(message);
+      onProposalGenerated(response, selectedContact.name);
       onClose();
       resetForm();
     } catch (error) {
