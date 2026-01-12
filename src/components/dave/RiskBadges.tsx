@@ -13,12 +13,18 @@ export function RiskBadges() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRisks = async () => {
+    const fetchRisks = async (retries = 2) => {
       try {
         const { risks } = await getRisks();
-        setRisks(risks);
+        setRisks(risks || []);
       } catch (error) {
-        // Silently fail - risks are not critical
+        // Retry on failure (handles intermittent 404s)
+        if (retries > 0) {
+          setTimeout(() => fetchRisks(retries - 1), 1000);
+          return;
+        }
+        // Silently fail after retries - risks are not critical
+        console.warn("Failed to fetch risks:", error);
         setRisks([]);
       } finally {
         setIsLoading(false);
@@ -27,7 +33,7 @@ export function RiskBadges() {
 
     fetchRisks();
     // Refresh every 5 minutes
-    const interval = setInterval(fetchRisks, 5 * 60 * 1000);
+    const interval = setInterval(() => fetchRisks(), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
