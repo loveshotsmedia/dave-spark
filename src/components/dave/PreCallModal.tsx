@@ -29,7 +29,13 @@ export function PreCallModal({ contactId, contactName, isOpen, onClose }: PreCal
     setIsLoading(true);
     try {
       const data = await getPreCallBriefing(contactId);
-      setBriefing(data);
+      // The API returns { briefing: string }, we need to parse it or provide defaults
+      setBriefing({
+        briefing: data.briefing,
+        keyPoints: [],
+        landmines: [],
+        bestOutcome: "",
+      });
     } catch (error) {
       console.error("Failed to fetch briefing:", error);
       // Provide fallback data

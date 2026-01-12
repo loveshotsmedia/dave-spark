@@ -36,10 +36,10 @@ export function ContactCard({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="font-semibold text-foreground">{contact.name}</h4>
-              {contact.netWorth && (
+              <h4 className="font-semibold text-foreground">{contact.full_name}</h4>
+              {contact.net_worth && (
                 <span className="text-sm font-medium text-success">
-                  {formatNetWorth(contact.netWorth)}
+                  {formatNetWorth(contact.net_worth)}
                 </span>
               )}
             </div>

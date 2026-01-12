@@ -36,7 +36,7 @@ export function QueryPanel({ isOpen, onClose, onContactSelect }: QueryPanelProps
       // Apply client-side filters
       const filtered = contacts.filter((contact) => {
         // Net worth filter
-        const netWorthM = (contact.netWorth || 0) / 1000000;
+        const netWorthM = (contact.net_worth || 0) / 1000000;
         if (netWorthM < netWorthRange[0] || netWorthM > netWorthRange[1]) {
           return false;
         }

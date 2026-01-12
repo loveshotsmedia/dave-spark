@@ -67,7 +67,7 @@ export default function Chat() {
   };
 
   const handleContactSelect = (contact: Contact) => {
-    sendMessage(`Tell me about ${contact.name}`);
+    sendMessage(`Tell me about ${contact.full_name}`);
   };
 
   const handleAnticipatorAction = (action: string) => {

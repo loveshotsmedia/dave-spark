@@ -23,7 +23,7 @@ export function CalendarPanel({ isOpen, onClose }: CalendarPanelProps) {
   const fetchAppointments = async () => {
     setIsLoading(true);
     try {
-      const { appointments } = await getAppointments(10);
+      const { appointments } = await getAppointments({ limit: 10 });
       setAppointments(appointments);
     } catch (error) {
       console.error("Failed to fetch appointments:", error);
@@ -34,7 +34,7 @@ export function CalendarPanel({ isOpen, onClose }: CalendarPanelProps) {
   };
 
   const groupedAppointments = appointments.reduce((acc, apt) => {
-    const date = parseISO(apt.startTime);
+    const date = parseISO(apt.start_time || apt.scheduled_at);
     let group = "Upcoming";
     if (isToday(date)) group = "Today";
     else if (isTomorrow(date)) group = "Tomorrow";
@@ -43,17 +43,6 @@ export function CalendarPanel({ isOpen, onClose }: CalendarPanelProps) {
     acc[group].push(apt);
     return acc;
   }, {} as Record<string, Appointment[]>);
-
-  const TypeIcon = ({ type }: { type: Appointment["type"] }) => {
-    switch (type) {
-      case "video":
-        return <Video className="h-4 w-4 text-primary" />;
-      case "phone":
-        return <Phone className="h-4 w-4 text-success" />;
-      case "in-person":
-        return <MapPin className="h-4 w-4 text-warning" />;
-    }
-  };
 
   return (
     <SlidePanel title="Upcoming Meetings" isOpen={isOpen} onClose={onClose}>
@@ -81,12 +70,14 @@ export function CalendarPanel({ isOpen, onClose }: CalendarPanelProps) {
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">
                         <p className="font-medium">
-                          {format(parseISO(apt.startTime), "h:mm a")}
+                          {format(parseISO(apt.start_time || apt.scheduled_at), "h:mm a")}
                         </p>
-                        <p className="text-sm text-foreground">{apt.contactName || apt.title}</p>
+                        <p className="text-sm text-foreground">
+                          {apt.contacts?.full_name || apt.title}
+                        </p>
                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                          <TypeIcon type={apt.type} />
-                          <span className="capitalize">{apt.type} Call</span>
+                          <Video className="h-4 w-4 text-primary" />
+                          <span>Meeting</span>
                         </div>
                       </div>
                     </div>
