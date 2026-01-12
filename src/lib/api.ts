@@ -97,15 +97,6 @@ async function apiRequest<T>(
   return response.json() as Promise<T>;
 }
 
-// Auth
-export async function syncAuth(): Promise<{ success: boolean }> {
-  return apiRequest("/api/auth/sync", "POST");
-}
-
-export async function getOnboardingStatus(): Promise<OnboardingStatus> {
-  return apiRequest("/api/auth/me/onboarding", "GET");
-}
-
 // Chat
 export async function chat(message: string): Promise<{ response: string; context?: string }> {
   return apiRequest("/chat", "POST", { message });
@@ -113,34 +104,21 @@ export async function chat(message: string): Promise<{ response: string; context
 
 // Contacts
 export async function searchContacts(query: string): Promise<{ contacts: Contact[] }> {
-  return apiRequest("/api/contacts/search", "POST", { query });
+  return apiRequest("/contacts/search", "POST", { query });
 }
 
 export async function getContact(id: string): Promise<{ contact: Contact; clientFile?: unknown }> {
-  return apiRequest("/api/contacts/get", "POST", { id });
-}
-
-// Proposals
-export async function generateProposal(
-  contactId: string,
-  proposalType: string,
-  additionalContext?: string
-): Promise<{ proposal: string }> {
-  return apiRequest("/api/proposal/generate", "POST", {
-    contactId,
-    proposalType,
-    additionalContext,
-  });
+  return apiRequest("/contacts/get", "POST", { id });
 }
 
 // Appointments
 export async function getAppointments(limit?: number): Promise<{ appointments: Appointment[] }> {
-  return apiRequest("/api/appointments", "POST", { limit: limit || 10 });
+  return apiRequest("/appointments", "POST", { limit: limit || 10 });
 }
 
 // Tasks
 export async function getTasks(status?: string): Promise<{ tasks: Task[] }> {
-  return apiRequest("/api/tasks", "POST", { status });
+  return apiRequest("/tasks", "POST", { status });
 }
 
 // Alien Features
@@ -150,11 +128,11 @@ export async function getPreCallBriefing(contactId: string): Promise<{
   landmines: string[];
   bestOutcome: string;
 }> {
-  return apiRequest("/api/alien/precall", "POST", { contactId });
+  return apiRequest("/alien/precall", "POST", { contactId });
 }
 
 export async function getAnticipatoryActions(): Promise<{ suggestions: Suggestion[] }> {
-  return apiRequest("/api/alien/anticipate", "POST", {});
+  return apiRequest("/alien/anticipate", "POST", {});
 }
 
 export async function documentCall(
@@ -167,9 +145,9 @@ export async function documentCall(
   sentiment: string;
   followUpDate: string;
 }> {
-  return apiRequest("/api/alien/document", "POST", { contactId, transcript });
+  return apiRequest("/alien/document", "POST", { contactId, transcript });
 }
 
 export async function getRisks(): Promise<{ risks: Risk[] }> {
-  return apiRequest("/api/alien/risks", "POST", {});
+  return apiRequest("/alien/risks", "POST", {});
 }

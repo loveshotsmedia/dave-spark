@@ -1,30 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
-import { syncAuth, getOnboardingStatus } from "@/lib/api";
 
 export function useAuth() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(true);
 
+  // With passphrase auth, we're always authenticated
   useEffect(() => {
-    // Check if we can reach the API (validates the hardcoded passphrase)
-    const checkAuth = async () => {
-      try {
-        await syncAuth();
-        const status = await getOnboardingStatus();
-        setOnboardingComplete(status.completed);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        // Even if sync fails, we're "authenticated" with the passphrase
-        setIsAuthenticated(true);
-        setOnboardingComplete(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
+    setIsAuthenticated(true);
+    setOnboardingComplete(true);
+    setIsLoading(false);
   }, []);
 
   const signOut = useCallback(async () => {
