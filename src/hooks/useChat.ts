@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { api, Message } from "@/lib/api";
+import { Message, chat } from "@/lib/api";
 
 export interface ChatMessage extends Message {
   id: string;
@@ -47,7 +47,7 @@ export function useChat() {
         .map((m) => ({ role: m.role, content: m.content }));
       allMessages.push({ role: "user", content });
 
-      const response = await api.chat(allMessages);
+      const response = await chat(allMessages);
 
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,

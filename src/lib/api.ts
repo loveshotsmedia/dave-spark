@@ -1,5 +1,5 @@
-// Dave 2.0 API Client
-const API_BASE = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
+// Dave 2.0 API Client - Uses Supabase Edge Function Proxy
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Message {
   role: "user" | "assistant";
@@ -61,137 +61,105 @@ export interface Suggestion {
   priority: number;
 }
 
-class DaveAPI {
-  private passphrase: string | null = null;
-
-  setPassphrase(passphrase: string) {
-    this.passphrase = passphrase;
-    sessionStorage.setItem("dave-passphrase", passphrase);
-  }
-
-  getPassphrase(): string | null {
-    if (!this.passphrase) {
-      this.passphrase = sessionStorage.getItem("dave-passphrase");
-    }
-    return this.passphrase;
-  }
-
-  clearPassphrase() {
-    this.passphrase = null;
-    sessionStorage.removeItem("dave-passphrase");
-  }
-
-  isAuthenticated(): boolean {
-    return !!this.getPassphrase();
-  }
-
-  private async request<T>(endpoint: string, data?: unknown): Promise<T> {
-    const passphrase = this.getPassphrase();
-    if (!passphrase) {
-      throw new Error("Not authenticated");
-    }
-
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-owner-auth": passphrase,
-      },
-      body: data ? JSON.stringify(data) : undefined,
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        this.clearPassphrase();
-        throw new Error("Invalid passphrase");
-      }
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  // Chat
-  async chat(messages: Message[]): Promise<{ response: string; context?: string }> {
-    return this.request("/chat", { messages });
-  }
-
-  // Contacts
-  async searchContacts(query: string): Promise<{ contacts: Contact[] }> {
-    return this.request("/contacts/search", { query });
-  }
-
-  async getContact(id: string): Promise<{ contact: Contact; clientFile?: unknown }> {
-    return this.request("/contacts/get", { id });
-  }
-
-  // Proposals
-  async generateProposal(
-    contactId: string,
-    proposalType: string,
-    additionalContext?: string
-  ): Promise<{ proposal: string }> {
-    return this.request("/proposal/generate", {
-      contactId,
-      proposalType,
-      additionalContext,
-    });
-  }
-
-  // Appointments
-  async getAppointments(limit?: number): Promise<{ appointments: Appointment[] }> {
-    return this.request("/appointments", { limit: limit || 10 });
-  }
-
-  // Tasks
-  async getTasks(status?: string): Promise<{ tasks: Task[] }> {
-    return this.request("/tasks", { status });
-  }
-
-  // Alien Features
-  async getPreCallBriefing(contactId: string): Promise<{ briefing: string; keyPoints: string[]; landmines: string[]; bestOutcome: string }> {
-    return this.request("/alien/precall", { contactId });
-  }
-
-  async getAnticipatoryActions(): Promise<{ suggestions: Suggestion[] }> {
-    return this.request("/alien/anticipate", {});
-  }
-
-  async documentCall(
-    contactId: string,
-    transcript: string
-  ): Promise<{ summary: string; keyPoints: string[]; actionItems: string[]; sentiment: string; followUpDate: string }> {
-    return this.request("/alien/document", { contactId, transcript });
-  }
-
-  async getRisks(): Promise<{ risks: Risk[] }> {
-    return this.request("/alien/risks", {});
-  }
-
-  // Status check
-  async getStatus(): Promise<{ isNew: boolean; contactCount: number; appointmentCount: number }> {
-    const passphrase = this.getPassphrase();
-    if (!passphrase) {
-      throw new Error("Not authenticated");
-    }
-
-    const response = await fetch(`${API_BASE}/status`, {
-      method: "GET",
-      headers: {
-        "x-owner-auth": passphrase,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        this.clearPassphrase();
-        throw new Error("Invalid passphrase");
-      }
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    return response.json();
-  }
+export interface OnboardingStatus {
+  completed: boolean;
+  steps?: {
+    profile?: boolean;
+    preferences?: boolean;
+  };
 }
 
-export const api = new DaveAPI();
+// API Proxy helper - all requests go through the edge function
+async function apiRequest<T>(
+  endpoint: string,
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  body?: unknown
+): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("api-proxy", {
+    body: { endpoint, method, body },
+  });
+
+  if (error) {
+    console.error("API Error:", error);
+    throw new Error(error.message || "API request failed");
+  }
+
+  return data as T;
+}
+
+// Auth
+export async function syncAuth(): Promise<{ success: boolean }> {
+  return apiRequest("/api/auth/sync", "POST");
+}
+
+export async function getOnboardingStatus(): Promise<OnboardingStatus> {
+  return apiRequest("/api/auth/me/onboarding", "GET");
+}
+
+// Chat
+export async function chat(messages: Message[]): Promise<{ response: string; context?: string }> {
+  return apiRequest("/api/chat", "POST", { messages });
+}
+
+// Contacts
+export async function searchContacts(query: string): Promise<{ contacts: Contact[] }> {
+  return apiRequest("/api/contacts/search", "POST", { query });
+}
+
+export async function getContact(id: string): Promise<{ contact: Contact; clientFile?: unknown }> {
+  return apiRequest("/api/contacts/get", "POST", { id });
+}
+
+// Proposals
+export async function generateProposal(
+  contactId: string,
+  proposalType: string,
+  additionalContext?: string
+): Promise<{ proposal: string }> {
+  return apiRequest("/api/proposal/generate", "POST", {
+    contactId,
+    proposalType,
+    additionalContext,
+  });
+}
+
+// Appointments
+export async function getAppointments(limit?: number): Promise<{ appointments: Appointment[] }> {
+  return apiRequest("/api/appointments", "POST", { limit: limit || 10 });
+}
+
+// Tasks
+export async function getTasks(status?: string): Promise<{ tasks: Task[] }> {
+  return apiRequest("/api/tasks", "POST", { status });
+}
+
+// Alien Features
+export async function getPreCallBriefing(contactId: string): Promise<{
+  briefing: string;
+  keyPoints: string[];
+  landmines: string[];
+  bestOutcome: string;
+}> {
+  return apiRequest("/api/alien/precall", "POST", { contactId });
+}
+
+export async function getAnticipatoryActions(): Promise<{ suggestions: Suggestion[] }> {
+  return apiRequest("/api/alien/anticipate", "POST", {});
+}
+
+export async function documentCall(
+  contactId: string,
+  transcript: string
+): Promise<{
+  summary: string;
+  keyPoints: string[];
+  actionItems: string[];
+  sentiment: string;
+  followUpDate: string;
+}> {
+  return apiRequest("/api/alien/document", "POST", { contactId, transcript });
+}
+
+export async function getRisks(): Promise<{ risks: Risk[] }> {
+  return apiRequest("/api/alien/risks", "POST", {});
+}

@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SlidePanel } from "./SlidePanel";
-import { api, Contact } from "@/lib/api";
+import { searchContacts, generateProposal, Contact } from "@/lib/api";
 import { ContactCard } from "./ContactCard";
 
 const PROPOSAL_TYPES = [
@@ -50,7 +50,7 @@ export function ProposalPanel({
 
     setIsSearching(true);
     try {
-      const { contacts } = await api.searchContacts(searchQuery);
+      const { contacts } = await searchContacts(searchQuery);
       setSearchResults(contacts);
     } catch (error) {
       console.error("Search failed:", error);
@@ -64,7 +64,7 @@ export function ProposalPanel({
 
     setIsGenerating(true);
     try {
-      const { proposal } = await api.generateProposal(
+      const { proposal } = await generateProposal(
         selectedContact.id,
         proposalType,
         additionalContext

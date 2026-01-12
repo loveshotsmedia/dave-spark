@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Video, Phone, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SlidePanel } from "./SlidePanel";
-import { api, Appointment } from "@/lib/api";
+import { getAppointments, Appointment } from "@/lib/api";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 
 interface CalendarPanelProps {
@@ -23,7 +23,7 @@ export function CalendarPanel({ isOpen, onClose }: CalendarPanelProps) {
   const fetchAppointments = async () => {
     setIsLoading(true);
     try {
-      const { appointments } = await api.getAppointments(10);
+      const { appointments } = await getAppointments(10);
       setAppointments(appointments);
     } catch (error) {
       console.error("Failed to fetch appointments:", error);
