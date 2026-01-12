@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { Message, chat } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 
 export interface ChatMessage extends Message {
   id: string;
@@ -53,6 +54,14 @@ export function useChat() {
     try {
       const response = await chat(content, files);
 
+      // Show toast if documents were uploaded to knowledge base
+      if (response.documentsUploaded && response.documentsUploaded > 0) {
+        toast({
+          title: "Document added to knowledge base",
+          description: `${response.documentsUploaded} document${response.documentsUploaded > 1 ? 's' : ''} uploaded. The chat can now reference this content.`,
+        });
+      }
+
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
@@ -77,7 +86,7 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages]);
+  }, []);
 
   const clearMessages = useCallback(() => {
     setMessages([
