@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { TypingIndicator } from "./TypingIndicator";
 import { ContactCard } from "./ContactCard";
 import { Contact } from "@/lib/api";
+import { GaarWarningBadge, useGaarCheck } from "./GaarWarningBadge";
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -12,6 +13,9 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, onGenerateProposal }: ChatMessageProps) {
   const isUser = message.role === "user";
+  
+  // Check for GAAR-related content in assistant messages
+  const { showWarning, level } = useGaarCheck(!isUser ? message.content : "");
 
   // Try to parse embedded contact data from the message
   const parseEmbeddedContacts = (content: string): Contact[] => {
@@ -47,7 +51,7 @@ export function ChatMessage({ message, onGenerateProposal }: ChatMessageProps) {
       )}
 
       <div
-        className={`flex-1 space-y-3 ${isUser ? "flex justify-end" : ""}`}
+        className={`flex-1 space-y-3 ${isUser ? "flex flex-col items-end" : ""}`}
       >
         <div
           className={`inline-block rounded-2xl px-4 py-3 ${
@@ -64,6 +68,19 @@ export function ChatMessage({ message, onGenerateProposal }: ChatMessageProps) {
             </div>
           )}
         </div>
+
+        {/* GAAR Warning Badge */}
+        {!isUser && showWarning && !message.isLoading && (
+          <GaarWarningBadge 
+            level={level} 
+            message="This response mentions tax planning strategies that may be subject to GAAR review."
+            details={[
+              "Consult with a tax professional before proceeding",
+              "Document the business purpose clearly",
+              "Ensure compliance with CRA guidelines"
+            ]}
+          />
+        )}
 
         {/* Embedded contact cards */}
         {embeddedContacts.length > 0 && (
