@@ -207,3 +207,23 @@
 .animate-pulse-subtle {
   animation: pulse-subtle 2s infinite;
 }
+
+/* Indeterminate progress bar animation */
+@keyframes progress {
+  0% { 
+    width: 0%; 
+    margin-left: 0%; 
+  }
+  50% { 
+    width: 30%; 
+    margin-left: 35%; 
+  }
+  100% { 
+    width: 0%; 
+    margin-left: 100%; 
+  }
+}
+
+.animate-progress {
+  animation: progress 2s ease-in-out infinite;
+}
