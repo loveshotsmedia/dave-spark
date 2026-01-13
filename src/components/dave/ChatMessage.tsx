@@ -61,7 +61,13 @@ export function ChatMessage({ message, onGenerateProposal }: ChatMessageProps) {
           }`}
         >
           {message.isLoading ? (
-            <TypingIndicator extractionProgress={message.extractionProgress} />
+            <TypingIndicator 
+              extractionProgress={message.extractionProgress}
+              loadingPhase={message.loadingPhase}
+              workingMessage={message.workingMessage}
+              typedContent={message.typedContent}
+              fullContent={message.content}
+            />
           ) : (
             <div className={`prose prose-sm max-w-none ${isUser ? "prose-invert" : ""}`}>
               <ReactMarkdown>{cleanContent}</ReactMarkdown>
