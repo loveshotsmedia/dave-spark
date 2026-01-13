@@ -553,16 +553,24 @@ export interface KnowledgeEntry {
   id: string;
   title: string;
   source_type: string;
+  file_name?: string;
+  file_type?: string;
+  content_text?: string;
   content_summary?: string;
   category: string[];
   tags: string[];
+  client_specific: boolean;
+  related_contact_id?: string;
+  metadata?: Record<string, unknown>;
+  is_active: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export interface KnowledgeUploadRequest {
   title: string;
   content: string;
-  sourceType?: "file" | "article" | "proposal" | "regulation" | "manual_entry";
+  sourceType?: "file" | "article" | "proposal_template" | "regulation" | "case_study" | "client_communication" | "manual_entry";
   fileName?: string;
   fileType?: string;
   tags?: string[];
@@ -592,6 +600,228 @@ export async function searchKnowledge(query: string, limit?: number): Promise<{ 
     method: "POST",
     body: { query, limit: limit || 5 },
   });
+}
+
+export async function bulkImportKnowledge(entries: Array<{
+  title: string;
+  content: string;
+  sourceType?: string;
+  tags?: string[];
+}>): Promise<{ success: number; failed: number; errors: string[] }> {
+  return daveAPI("knowledge/bulk-import", {
+    method: "POST",
+    body: { entries },
+  });
+}
+
+export async function deleteKnowledge(id: string): Promise<{ success: boolean }> {
+  return daveAPI("knowledge/delete", {
+    method: "POST",
+    body: { id },
+  });
+}
+
+export async function updateKnowledge(id: string, updates: Partial<KnowledgeUploadRequest>): Promise<{ success: boolean; entry?: KnowledgeEntry }> {
+  return daveAPI("knowledge/update", {
+    method: "POST",
+    body: { id, ...updates },
+  });
+}
+
+// ========== CASE FILES ==========
+export interface CaseFile {
+  id: string;
+  contact_id: string;
+  case_number: string;
+  case_name: string;
+  case_type: string;
+  status: string;
+  confirmed_facts: unknown[];
+  assumptions: unknown[];
+  client_intent: string;
+  advisor_intent: string;
+  strategies_included: unknown[];
+  strategies_excluded: unknown[];
+  strategies_deferred: unknown[];
+  dependencies: string[];
+  constraints: string[];
+  priority: string;
+  estimated_value: number;
+  complexity_level: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  contact?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    company: string;
+    full_name?: string;
+  };
+  decisions?: AdvisorDecision[];
+}
+
+export interface AdvisorDecision {
+  id: string;
+  case_id: string;
+  contact_id: string;
+  decision_number: string;
+  decision_type: string;
+  decision_category: string;
+  decision_title: string;
+  strategy_chosen: string;
+  rationale: string;
+  alternatives_considered: Array<{
+    strategy: string;
+    pros: string[];
+    cons: string[];
+    reason_not_chosen: string;
+  }>;
+  risks_acknowledged: string[];
+  risk_mitigation: string;
+  confidence_level: string;
+  confidence_factors: string[];
+  caveats: string[];
+  gaar_reviewed: boolean;
+  gaar_notes: string;
+  status: string;
+  decided_at: string;
+  finalized_at: string;
+}
+
+export async function listCases(options?: { contactId?: string; status?: string }): Promise<{ cases: CaseFile[] }> {
+  return daveAPI("cases/list", {
+    method: "POST",
+    body: options || {},
+  });
+}
+
+export async function getCase(id: string): Promise<{ caseFile: CaseFile }> {
+  return daveAPI("cases/get", {
+    method: "POST",
+    body: { id },
+  });
+}
+
+export async function createCase(data: {
+  contactId: string;
+  caseName: string;
+  caseType?: string;
+  clientIntent?: string;
+  advisorIntent?: string;
+  priority?: string;
+  estimatedValue?: number;
+}): Promise<{ caseFile: CaseFile; message: string }> {
+  return daveAPI("cases/create", {
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function updateCase(id: string, updates: Partial<CaseFile>): Promise<{ caseFile: CaseFile }> {
+  return daveAPI("cases/update", {
+    method: "POST",
+    body: { id, ...updates },
+  });
+}
+
+export async function recordDecision(data: {
+  caseId: string;
+  decisionType: string;
+  decisionCategory?: string;
+  decisionTitle: string;
+  strategyChosen: string;
+  rationale: string;
+  alternativesConsidered?: Array<{
+    strategy: string;
+    pros?: string[];
+    cons?: string[];
+    reasonNotChosen: string;
+  }>;
+  risksAcknowledged?: string[];
+  riskMitigation?: string;
+  confidenceLevel?: string;
+  gaarReviewed?: boolean;
+  gaarNotes?: string;
+}): Promise<{ decision: AdvisorDecision; message: string }> {
+  return daveAPI("decisions/record", {
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function listDecisions(options?: { caseId?: string; contactId?: string }): Promise<{ decisions: AdvisorDecision[] }> {
+  return daveAPI("decisions/list", {
+    method: "POST",
+    body: options || {},
+  });
+}
+
+export async function finalizeDecision(id: string): Promise<{ decision: AdvisorDecision }> {
+  return daveAPI("decisions/finalize", {
+    method: "POST",
+    body: { id },
+  });
+}
+
+export async function createTrustBuilderShare(caseId: string, options?: {
+  showCaseSummary?: boolean;
+  showStrategies?: boolean;
+  showDecisions?: boolean;
+  welcomeMessage?: string;
+  educationalTopics?: string[];
+  expiresInDays?: number;
+}): Promise<{ share: unknown; shareUrl: string; message: string }> {
+  return daveAPI("trust-builder/create-share", {
+    method: "POST",
+    body: { caseId, ...options },
+  });
+}
+
+// Trust Builder PUBLIC endpoints (no auth)
+const DAVE_API_URL_PUBLIC = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
+
+export async function getTrustBuilderView(token: string): Promise<{
+  contact?: { firstName: string; lastName: string };
+  welcomeMessage?: string;
+  caseSummary?: {
+    caseName: string;
+    caseType: string;
+    status: string;
+    clientIntent: string;
+  };
+  strategies?: unknown[];
+  nextSteps?: string[];
+  decisions?: unknown[];
+  educationalTopics?: string[];
+  error?: string;
+}> {
+  const response = await fetch(`${DAVE_API_URL_PUBLIC}/trust-builder/view`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      apikey: DAVE_API_ANON_KEY,
+      Authorization: `Bearer ${DAVE_API_ANON_KEY}`,
+    },
+    body: JSON.stringify({ token })
+  });
+  return response.json();
+}
+
+export async function submitTrustBuilderFeedback(token: string, feedback: {
+  type: 'question' | 'objection';
+  content: string;
+}): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${DAVE_API_URL_PUBLIC}/trust-builder/feedback`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      apikey: DAVE_API_ANON_KEY,
+      Authorization: `Bearer ${DAVE_API_ANON_KEY}`,
+    },
+    body: JSON.stringify({ token, ...feedback })
+  });
+  return response.json();
 }
 
 // ========== CANADIAN FINANCIAL DATA ==========
