@@ -433,10 +433,15 @@ export default function ContactProfile() {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => navigate("/chat")}
+                    onClick={handleInitiateCall}
+                    disabled={isCallingContact || !contact?.phone}
                   >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Schedule Call
+                    {isCallingContact ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <PhoneCall className="h-4 w-4 mr-2" />
+                    )}
+                    {isCallingContact ? "Calling..." : "Initiate Call"}
                   </Button>
                   <Button
                     variant="outline"
