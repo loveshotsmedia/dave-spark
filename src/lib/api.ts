@@ -615,18 +615,10 @@ export async function bulkImportKnowledge(entries: Array<{
 }
 
 export async function deleteKnowledge(id: string): Promise<{ success: boolean }> {
-  try {
-    return await daveAPI("knowledge/delete", {
-      method: "POST",
-      body: { id },
-    });
-  } catch (error) {
-    // The backend doesn't have this endpoint yet - provide a clear message
-    if (error instanceof Error && error.message.includes("Not found")) {
-      throw new Error("Delete functionality is not yet available. Please contact support.");
-    }
-    throw error;
-  }
+  return daveAPI("knowledge/delete", {
+    method: "POST",
+    body: { id },
+  });
 }
 
 export async function updateKnowledge(id: string, updates: Partial<KnowledgeUploadRequest>): Promise<{ success: boolean; entry?: KnowledgeEntry }> {
