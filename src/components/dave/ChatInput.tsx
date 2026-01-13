@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, FileText, Database, Calendar, Radio, Paperclip, X, Upload, Library } from "lucide-react";
+import { ArrowUp, FileText, Database, Calendar, Radio, Paperclip, X, Upload, Library, Calculator, Shield, MessageSquare, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,10 @@ interface ChatInputProps {
   onCalendarClick: () => void;
   onChannelsClick: () => void;
   onContentLibraryClick: () => void;
+  onCalculatorsClick: () => void;
+  onGAARClick: () => void;
+  onSMSClick: () => void;
+  onEmailClick: () => void;
 }
 
 export function ChatInput({
@@ -22,6 +26,10 @@ export function ChatInput({
   onCalendarClick,
   onChannelsClick,
   onContentLibraryClick,
+  onCalculatorsClick,
+  onGAARClick,
+  onSMSClick,
+  onEmailClick,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -206,6 +214,16 @@ export function ChatInput({
             onClick={onProposalClick}
           />
           <QuickActionButton
+            icon={<Calculator className="h-4 w-4" />}
+            label="Calculators"
+            onClick={onCalculatorsClick}
+          />
+          <QuickActionButton
+            icon={<Shield className="h-4 w-4" />}
+            label="GAAR"
+            onClick={onGAARClick}
+          />
+          <QuickActionButton
             icon={<Database className="h-4 w-4" />}
             label="Query"
             onClick={onQueryClick}
@@ -216,9 +234,14 @@ export function ChatInput({
             onClick={onCalendarClick}
           />
           <QuickActionButton
-            icon={<Radio className="h-4 w-4" />}
-            label="Channels"
-            onClick={onChannelsClick}
+            icon={<MessageSquare className="h-4 w-4" />}
+            label="SMS"
+            onClick={onSMSClick}
+          />
+          <QuickActionButton
+            icon={<Mail className="h-4 w-4" />}
+            label="Email"
+            onClick={onEmailClick}
           />
           <QuickActionButton
             icon={<Library className="h-4 w-4" />}
