@@ -1,134 +1,167 @@
 import { useState, useEffect } from "react";
-import { Mail, MessageSquare, Play, Pause, X, Plus, Loader2 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
+import { Mail, MessageSquare, Plus, X, Pause, Play, Clock, Target, Loader2 } from "lucide-react";
 import {
   listCampaigns,
   getContactEnrollments,
   enrollInCampaign,
   unenrollFromCampaign,
+  updateEnrollmentStatus,
   DripCampaign,
   DripEnrollment,
 } from "@/lib/api";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface CampaignEnrollmentCardProps {
   contactId: string;
-  contactName: string;
+  contactName?: string;
 }
+
+// Topic color mapping
+const TOPIC_COLORS: Record<string, string> = {
+  ifa: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+  cda: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  estate_freeze: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+  tfsa: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  rrsp: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
+};
+
+// Status colors
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  paused: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+  completed: "bg-muted text-muted-foreground",
+  cancelled: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+};
 
 export function CampaignEnrollmentCard({ contactId, contactName }: CampaignEnrollmentCardProps) {
   const [enrollments, setEnrollments] = useState<DripEnrollment[]>([]);
   const [campaigns, setCampaigns] = useState<DripCampaign[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isEnrolling, setIsEnrolling] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<string>("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    fetchData();
+    loadData();
   }, [contactId]);
 
-  async function fetchData() {
-    setIsLoading(true);
+  const loadData = async () => {
+    setLoading(true);
     try {
-      const [enrollmentsRes, campaignsRes] = await Promise.all([
+      const [enrollmentData, campaignData] = await Promise.all([
         getContactEnrollments(contactId),
-        listCampaigns(),
+        listCampaigns()
       ]);
-      setEnrollments(enrollmentsRes.enrollments || []);
-      setCampaigns(campaignsRes.campaigns || []);
+      setEnrollments(enrollmentData.enrollments || []);
+      setCampaigns(campaignData.campaigns || []);
     } catch (error) {
-      console.error("Failed to fetch campaign data:", error);
+      toast({
+        title: "Error loading campaigns",
+        description: "Failed to load campaign data",
+        variant: "destructive"
+      });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }
+  };
 
-  async function handleEnroll() {
+  // Get available campaigns (not already enrolled in active ones)
+  const availableCampaigns = campaigns.filter(
+    c => c.is_active && !enrollments.some(e => e.campaign_id === c.id && e.status === 'active')
+  );
+
+  // Enroll in campaign
+  const handleEnroll = async () => {
     if (!selectedCampaign) return;
-    
-    setIsEnrolling(true);
+
+    setEnrolling(true);
     try {
       const result = await enrollInCampaign(contactId, selectedCampaign);
       if (result.success) {
         toast({
           title: "Enrolled successfully",
-          description: `${contactName} has been enrolled in the campaign`,
+          description: `${contactName || 'Contact'} enrolled in campaign`
         });
-        setIsDialogOpen(false);
+        setDialogOpen(false);
         setSelectedCampaign("");
-        fetchData();
+        loadData();
       } else {
         throw new Error(result.error || "Failed to enroll");
       }
     } catch (error) {
       toast({
         title: "Enrollment failed",
-        description: error instanceof Error ? error.message : "Failed to enroll in campaign",
-        variant: "destructive",
+        description: error instanceof Error ? error.message : "Could not enroll in campaign",
+        variant: "destructive"
       });
     } finally {
-      setIsEnrolling(false);
+      setEnrolling(false);
     }
-  }
+  };
 
-  async function handleUnenroll(campaignId: string) {
+  // Unenroll from campaign
+  const handleUnenroll = async (campaignId: string) => {
     try {
       const result = await unenrollFromCampaign(contactId, campaignId);
       if (result.success) {
         toast({
-          title: "Unenrolled successfully",
-          description: `${contactName} has been removed from the campaign`,
+          title: "Unenrolled",
+          description: "Contact removed from campaign"
         });
-        fetchData();
+        loadData();
       }
     } catch (error) {
       toast({
-        title: "Unenrollment failed",
-        description: "Failed to remove from campaign",
-        variant: "destructive",
+        title: "Error",
+        description: "Could not unenroll from campaign",
+        variant: "destructive"
       });
     }
-  }
+  };
 
-  const enrolledCampaignIds = enrollments.map((e) => e.campaign_id);
-  const availableCampaigns = campaigns.filter(
-    (c) => c.is_active && !enrolledCampaignIds.includes(c.id)
-  );
-
-  function getStatusBadge(status: string) {
-    switch (status) {
-      case "active":
-        return <Badge className="bg-success text-success-foreground">Active</Badge>;
-      case "paused":
-        return <Badge variant="secondary">Paused</Badge>;
-      case "completed":
-        return <Badge className="bg-primary text-primary-foreground">Completed</Badge>;
-      case "cancelled":
-        return <Badge variant="destructive">Cancelled</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  // Pause/Resume campaign
+  const handleTogglePause = async (enrollment: DripEnrollment) => {
+    const newStatus = enrollment.status === 'paused' ? 'active' : 'paused';
+    try {
+      await updateEnrollmentStatus(enrollment.id, newStatus);
+      toast({
+        title: newStatus === 'paused' ? "Campaign paused" : "Campaign resumed",
+        description: `Drip sequence ${newStatus === 'paused' ? 'paused' : 'resumed'}`
+      });
+      loadData();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not update campaign status",
+        variant: "destructive"
+      });
     }
-  }
+  };
 
-  if (isLoading) {
+  // Format next step date
+  const formatNextStep = (date: string | null | undefined) => {
+    if (!date) return "Pending";
+    const d = new Date(date);
+    const now = new Date();
+    const diffHours = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60));
+
+    if (diffHours < 0) return "Due now";
+    if (diffHours < 24) return `In ${diffHours}h`;
+    const diffDays = Math.round(diffHours / 24);
+    return `In ${diffDays}d`;
+  };
+
+  // Get campaign details for an enrollment
+  const getCampaign = (campaignId: string) => campaigns.find(c => c.id === campaignId);
+
+  if (loading) {
     return (
       <Card>
         <CardHeader>
@@ -147,11 +180,17 @@ export function CampaignEnrollmentCard({ contactId, contactName }: CampaignEnrol
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Mail className="h-5 w-5" />
-          Drip Campaigns
-        </CardTitle>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Drip Campaigns
+          </CardTitle>
+          <CardDescription>
+            Automated email & SMS sequences
+          </CardDescription>
+        </div>
+
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" disabled={availableCampaigns.length === 0}>
               <Plus className="h-4 w-4 mr-1" />
@@ -162,111 +201,172 @@ export function CampaignEnrollmentCard({ contactId, contactName }: CampaignEnrol
             <DialogHeader>
               <DialogTitle>Enroll in Campaign</DialogTitle>
               <DialogDescription>
-                Select a drip campaign to enroll {contactName} in.
+                Select a drip campaign to enroll {contactName || 'this contact'}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+
+            <div className="space-y-4 py-4">
               <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a campaign" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableCampaigns.map((campaign) => (
+                  {availableCampaigns.map(campaign => (
                     <SelectItem key={campaign.id} value={campaign.id}>
                       <div className="flex items-center gap-2">
-                        {campaign.channel === "email" ? (
+                        {campaign.channel === 'email' ? (
                           <Mail className="h-4 w-4" />
                         ) : (
                           <MessageSquare className="h-4 w-4" />
                         )}
                         <span>{campaign.name}</span>
-                        <span className="text-muted-foreground text-xs">
-                          ({campaign.step_count} steps)
-                        </span>
+                        <Badge variant="outline" className="ml-1 text-xs">
+                          {campaign.topic.replace('_', ' ')}
+                        </Badge>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
               {selectedCampaign && (
                 <div className="rounded-lg border p-3 bg-muted/50">
                   {(() => {
-                    const campaign = campaigns.find((c) => c.id === selectedCampaign);
-                    return campaign ? (
-                      <div className="space-y-1">
-                        <p className="font-medium">{campaign.name}</p>
-                        <p className="text-sm text-muted-foreground">{campaign.description}</p>
+                    const c = campaigns.find(c => c.id === selectedCampaign);
+                    if (!c) return null;
+                    return (
+                      <>
+                        <p className="font-medium">{c.name}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{c.description}</p>
                         <div className="flex gap-2 mt-2">
-                          <Badge variant="outline">{campaign.topic}</Badge>
-                          <Badge variant="secondary">
-                            {campaign.channel === "email" ? "Email" : "SMS"}
+                          <Badge variant="secondary">{c.step_count} steps</Badge>
+                          <Badge className={TOPIC_COLORS[c.topic] || "bg-muted"}>
+                            {c.topic.replace('_', ' ')}
                           </Badge>
                         </div>
-                      </div>
-                    ) : null;
+                      </>
+                    );
                   })()}
                 </div>
               )}
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleEnroll} disabled={!selectedCampaign || isEnrolling}>
-                  {isEnrolling && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Enroll
-                </Button>
-              </div>
             </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEnroll} disabled={!selectedCampaign || enrolling}>
+                {enrolling && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {enrolling ? "Enrolling..." : "Enroll"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </CardHeader>
+
       <CardContent>
         {enrollments.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Not enrolled in any campaigns
-          </p>
+          <div className="text-center py-8 text-muted-foreground">
+            <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <p className="font-medium">No active campaigns</p>
+            <p className="text-sm">Enroll in a drip sequence to nurture this contact</p>
+          </div>
         ) : (
-          <div className="space-y-3">
-            {enrollments.map((enrollment) => (
-              <div
-                key={enrollment.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    {enrollment.drip_campaigns?.channel === "sms" ? (
-                      <MessageSquare className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Mail className="h-4 w-4 text-primary" />
+          <div className="space-y-4">
+            {enrollments.map(enrollment => {
+              const campaign = getCampaign(enrollment.campaign_id) || enrollment.drip_campaigns;
+              if (!campaign) return null;
+
+              const progress = campaign.step_count > 0
+                ? (enrollment.current_step / campaign.step_count) * 100
+                : 0;
+
+              return (
+                <div
+                  key={enrollment.id}
+                  className="p-4 rounded-lg border bg-card space-y-3"
+                >
+                  {/* Header Row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {campaign.channel === 'email' ? (
+                        <Mail className="h-4 w-4 text-primary" />
+                      ) : (
+                        <MessageSquare className="h-4 w-4 text-primary" />
+                      )}
+                      <span className="font-medium">{campaign.name}</span>
+                    </div>
+                    <Badge className={STATUS_COLORS[enrollment.status] || "bg-muted"}>
+                      {enrollment.status}
+                    </Badge>
+                  </div>
+
+                  {/* Topic Badge */}
+                  <div>
+                    <Badge variant="outline" className={TOPIC_COLORS[campaign.topic] || ""}>
+                      {campaign.topic.replace('_', ' ').toUpperCase()}
+                    </Badge>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Step {enrollment.current_step} of {campaign.step_count}</span>
+                      <span>{Math.round(progress)}% complete</span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+
+                  {/* Next Step Due */}
+                  {enrollment.status === 'active' && enrollment.next_step_due_at && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      Next step: {formatNextStep(enrollment.next_step_due_at)}
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-1">
+                    {enrollment.status === 'active' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleTogglePause(enrollment)}
+                      >
+                        <Pause className="h-3 w-3 mr-1" />
+                        Pause
+                      </Button>
+                    )}
+                    {enrollment.status === 'paused' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleTogglePause(enrollment)}
+                      >
+                        <Play className="h-3 w-3 mr-1" />
+                        Resume
+                      </Button>
+                    )}
+                    {(enrollment.status === 'active' || enrollment.status === 'paused') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleUnenroll(enrollment.campaign_id)}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Unenroll
+                      </Button>
                     )}
                   </div>
-                  <div>
-                    <p className="font-medium text-sm">
-                      {enrollment.drip_campaigns?.name || "Unknown Campaign"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Step {enrollment.current_step} of {enrollment.drip_campaigns?.step_count || "?"}
-                    </p>
-                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(enrollment.status)}
-                  {enrollment.status === "active" && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleUnenroll(enrollment.campaign_id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
+
+export default CampaignEnrollmentCard;
