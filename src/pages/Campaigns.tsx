@@ -4,11 +4,7 @@ import {
   Mail,
   MessageSquare,
   Search,
-  Filter,
-  Users,
   ChevronRight,
-  Play,
-  Pause,
   Loader2,
   LayoutGrid,
   List,
@@ -26,13 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -40,9 +29,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { listCampaigns, getCampaign, DripCampaign } from "@/lib/api";
+import { listCampaigns, DripCampaign } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { CampaignDetailDialog } from "@/components/dave/CampaignDetailDialog";
 
 export default function Campaigns() {
   const navigate = useNavigate();
@@ -55,10 +45,6 @@ export default function Campaigns() {
   const [channelFilter, setChannelFilter] = useState<string>("all");
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedCampaign, setSelectedCampaign] = useState<DripCampaign | null>(null);
-  const [campaignDetails, setCampaignDetails] = useState<any>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -111,20 +97,6 @@ export default function Campaigns() {
       });
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  async function handleViewDetails(campaign: DripCampaign) {
-    setSelectedCampaign(campaign);
-    setIsDetailsOpen(true);
-    setIsLoadingDetails(true);
-    try {
-      const result = await getCampaign(campaign.id);
-      setCampaignDetails(result.campaign);
-    } catch (error) {
-      console.error("Failed to fetch campaign details:", error);
-    } finally {
-      setIsLoadingDetails(false);
     }
   }
 
@@ -274,51 +246,54 @@ export default function Campaigns() {
         ) : viewMode === "grid" ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredCampaigns.map((campaign) => (
-              <Card
+              <CampaignDetailDialog
                 key={campaign.id}
-                className="cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => handleViewDetails(campaign)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        {campaign.channel === "sms" ? (
-                          <MessageSquare className="h-5 w-5 text-primary" />
-                        ) : (
-                          <Mail className="h-5 w-5 text-primary" />
-                        )}
+                campaign={campaign}
+                onEnrollmentSuccess={fetchCampaigns}
+                trigger={
+                  <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            {campaign.channel === "sms" ? (
+                              <MessageSquare className="h-5 w-5 text-primary" />
+                            ) : (
+                              <Mail className="h-5 w-5 text-primary" />
+                            )}
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">{campaign.name}</CardTitle>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {campaign.channel}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge
+                          variant={campaign.is_active ? "default" : "secondary"}
+                          className={campaign.is_active ? "bg-success text-success-foreground" : ""}
+                        >
+                          {campaign.is_active ? "Active" : "Inactive"}
+                        </Badge>
                       </div>
-                      <div>
-                        <CardTitle className="text-base">{campaign.name}</CardTitle>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {campaign.channel}
-                        </p>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {campaign.description || "No description"}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{campaign.topic}</Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {campaign.step_count} steps
+                          </span>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </div>
-                    </div>
-                    <Badge
-                      variant={campaign.is_active ? "default" : "secondary"}
-                      className={campaign.is_active ? "bg-success text-success-foreground" : ""}
-                    >
-                      {campaign.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                    {campaign.description || "No description"}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{campaign.topic}</Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {campaign.step_count} steps
-                      </span>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                }
+              />
             ))}
           </div>
         ) : (
@@ -368,14 +343,10 @@ export default function Campaigns() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewDetails(campaign)}
-                      >
-                        View
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
+                      <CampaignDetailDialog
+                        campaign={campaign}
+                        onEnrollmentSuccess={fetchCampaigns}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -385,86 +356,6 @@ export default function Campaigns() {
         )}
       </main>
 
-      {/* Campaign Details Dialog */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selectedCampaign?.channel === "sms" ? (
-                <MessageSquare className="h-5 w-5" />
-              ) : (
-                <Mail className="h-5 w-5" />
-              )}
-              {selectedCampaign?.name}
-            </DialogTitle>
-            <DialogDescription>{selectedCampaign?.description}</DialogDescription>
-          </DialogHeader>
-
-          {isLoadingDetails ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">{selectedCampaign?.topic}</Badge>
-                <Badge variant="secondary" className="capitalize">
-                  {selectedCampaign?.channel}
-                </Badge>
-                <Badge
-                  className={
-                    selectedCampaign?.is_active
-                      ? "bg-success text-success-foreground"
-                      : ""
-                  }
-                >
-                  {selectedCampaign?.is_active ? "Active" : "Inactive"}
-                </Badge>
-              </div>
-
-              <div className="rounded-lg border p-4">
-                <h4 className="font-medium mb-2">Campaign Details</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Total Steps:</span>
-                    <span className="ml-2 font-medium">{selectedCampaign?.step_count}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Channel:</span>
-                    <span className="ml-2 font-medium capitalize">
-                      {selectedCampaign?.channel}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {campaignDetails?.steps && (
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-medium mb-3">Campaign Steps</h4>
-                  <div className="space-y-2">
-                    {campaignDetails.steps.map((step: any, index: number) => (
-                      <div
-                        key={step.id || index}
-                        className="flex items-center gap-3 p-2 rounded bg-muted/50"
-                      >
-                        <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{step.subject || step.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Delay: {step.delay_days || 0} days
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

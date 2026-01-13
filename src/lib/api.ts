@@ -917,8 +917,32 @@ export async function listCampaigns(filters?: { topic?: string; channel?: string
   return daveAPI("campaigns/list", { method: "POST", body: filters || {} });
 }
 
-export async function getCampaign(id: string): Promise<{ campaign: DripCampaign }> {
+// Campaign step with full content
+export interface DripCampaignStep {
+  id: string;
+  campaign_id: string;
+  step_number: number;
+  delay_days: number;
+  subject?: string;
+  content: string;
+  content_library_id?: string;
+  is_active: boolean;
+  created_at?: string;
+}
+
+// Campaign with steps
+export interface DripCampaignWithSteps extends DripCampaign {
+  steps: DripCampaignStep[];
+}
+
+export async function getCampaign(id: string): Promise<{ campaign: DripCampaignWithSteps }> {
   return daveAPI("campaigns/get", { method: "POST", body: { id } });
+}
+
+// List all contacts (for dropdowns)
+export async function listContacts(limit?: number): Promise<Contact[]> {
+  const result = await searchContacts("");
+  return result.contacts || [];
 }
 
 export async function enrollInCampaign(contactId: string, campaignId: string): Promise<{ success: boolean; enrollmentId?: string; error?: string }> {
