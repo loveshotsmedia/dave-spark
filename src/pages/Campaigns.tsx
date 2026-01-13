@@ -100,8 +100,8 @@ export default function Campaigns() {
     }
   }
 
-  // Get unique topics for filter
-  const topics = [...new Set(campaigns.map((c) => c.topic))];
+  // Get unique topics for filter (filter out empty strings)
+  const topics = [...new Set(campaigns.map((c) => c.topic).filter(Boolean))];
 
   if (authLoading) {
     return (
