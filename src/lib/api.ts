@@ -277,13 +277,15 @@ export async function quickAddContact(description: string): Promise<{ success: b
 // ========== APPOINTMENTS ==========
 export interface Appointment {
   id: string;
-  contact_id?: string;
   title?: string;
-  start_time: string;
-  scheduled_at?: string;
+  contact_id?: string;
+  scheduled_at?: string;  // Some places use this
+  start_time?: string;    // Some places use this
+  end_time?: string;
   duration_minutes?: number;
   location?: string;
   notes?: string;
+  status?: string;
   contacts?: { full_name: string; email?: string; phone?: string };
 }
 
