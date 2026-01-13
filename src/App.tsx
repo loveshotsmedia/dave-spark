@@ -9,6 +9,7 @@ import Onboarding from "./pages/Onboarding";
 import Chat from "./pages/Chat";
 import Contacts from "./pages/Contacts";
 import ContactProfile from "./pages/ContactProfile";
+import ContentLibraryPage from "./pages/ContentLibraryPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/chat" element={<Chat />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/contacts/:id" element={<ContactProfile />} />
+          <Route path="/content-library" element={<ContentLibraryPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
