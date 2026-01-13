@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useChat } from "@/hooks/useChat";
 import { Header } from "@/components/dave/Header";
@@ -26,6 +26,7 @@ export default function Chat() {
   const { isAuthenticated, isLoading: authLoading, onboardingComplete, signOut } = useAuth();
   const { messages, isLoading, sendMessage } = useChat();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Panel states
@@ -63,6 +64,16 @@ export default function Chat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Handle pre-filled message from URL query parameter
+  useEffect(() => {
+    const prefillMessage = searchParams.get("message");
+    if (prefillMessage && !authLoading && isAuthenticated) {
+      sendMessage(prefillMessage);
+      // Clear the query parameter
+      setSearchParams({});
+    }
+  }, [searchParams, authLoading, isAuthenticated, sendMessage, setSearchParams]);
 
   const handleLogout = async () => {
     await signOut();

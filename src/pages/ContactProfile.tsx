@@ -446,7 +446,7 @@ export default function ContactProfile() {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => navigate("/chat")}
+                    onClick={() => navigate(`/chat?message=${encodeURIComponent(`Create a follow-up task for ${contact.full_name}`)}`)}
                   >
                     <CheckSquare className="h-4 w-4 mr-2" />
                     Add Task
