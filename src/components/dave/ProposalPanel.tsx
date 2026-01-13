@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SlidePanel } from "./SlidePanel";
-import { searchContacts, chat, Contact } from "@/lib/api";
+import { searchContacts, generateProposal, uploadContent, Contact, getContact } from "@/lib/api";
 import { ContactCard } from "./ContactCard";
-
+import { toast } from "@/hooks/use-toast";
 const PROPOSAL_TYPES = [
   "Succession Planning",
   "Estate Planning",
@@ -64,14 +64,64 @@ export function ProposalPanel({
 
     setIsGenerating(true);
     try {
-      // Use chat endpoint to generate proposals
-      const message = `Generate a ${proposalType} proposal for ${selectedContact.full_name}${additionalContext ? `. Additional context: ${additionalContext}` : ''}`;
-      const { response } = await chat(message);
-      onProposalGenerated(response, selectedContact.full_name);
+      // Get full contact details for proposal context
+      const { contact: fullContact, clientFile } = await getContact(selectedContact.id);
+      
+      // Build client details string
+      const clientDetails = [
+        fullContact.company && `Company: ${fullContact.company}`,
+        fullContact.title && `Title: ${fullContact.title}`,
+        clientFile?.business_value && `Business Value: $${clientFile.business_value.toLocaleString()}`,
+        clientFile?.acb && `ACB: $${clientFile.acb.toLocaleString()}`,
+        clientFile?.planning_needs?.length && `Planning Needs: ${clientFile.planning_needs.join(', ')}`,
+        additionalContext && `Additional Context: ${additionalContext}`,
+      ].filter(Boolean).join('\n');
+
+      // Map proposal type to API format
+      const proposalTypeMap: Record<string, "estate_freeze" | "ifa" | "insurance" | "corporate_restructuring" | "general"> = {
+        "Succession Planning": "corporate_restructuring",
+        "Estate Planning": "estate_freeze",
+        "Business Valuation": "general",
+        "Retirement Strategy": "ifa",
+        "Insurance Review": "insurance",
+        "Wealth Transfer": "estate_freeze",
+      };
+
+      // Use the proper generateProposal API endpoint
+      const result = await generateProposal({
+        contactId: selectedContact.id,
+        clientName: selectedContact.full_name,
+        clientDetails: clientDetails || `Contact for ${proposalType}`,
+        proposalType: proposalTypeMap[proposalType] || "general",
+        additionalContext,
+      });
+
+      // Save proposal to content library for future reference
+      await uploadContent({
+        title: `${proposalType} Proposal - ${selectedContact.full_name}`,
+        content_type: "proposal",
+        description: `Generated ${proposalType} proposal for ${selectedContact.full_name} on ${new Date().toLocaleDateString()}`,
+        tags: [proposalType.toLowerCase().replace(/ /g, '_'), 'proposal', 'generated'],
+        topic_keywords: [proposalType.toLowerCase()],
+        audience: "client",
+        file_content: result.proposal, // Store the proposal text
+      });
+
+      toast({
+        title: "Proposal saved",
+        description: `Proposal saved to Content Library for ${selectedContact.full_name}`,
+      });
+
+      onProposalGenerated(result.proposal, selectedContact.full_name);
       onClose();
       resetForm();
     } catch (error) {
       console.error("Generation failed:", error);
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Failed to generate proposal",
+        variant: "destructive",
+      });
     } finally {
       setIsGenerating(false);
     }
