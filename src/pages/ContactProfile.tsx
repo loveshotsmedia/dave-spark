@@ -39,6 +39,7 @@ import { EmailComposer } from "@/components/dave/EmailComposer";
 import { EditContactModal } from "@/components/dave/EditContactModal";
 import { SendContentModal } from "@/components/dave/SendContentModal";
 import { ProposalPanel } from "@/components/dave/ProposalPanel";
+import { CampaignEnrollmentCard } from "@/components/dave/CampaignEnrollmentCard";
 import { toast } from "@/hooks/use-toast";
 
 function formatNetWorth(value?: number): string {
@@ -404,6 +405,9 @@ export default function ContactProfile() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Campaign Enrollment */}
+            <CampaignEnrollmentCard contactId={id!} contactName={contact.full_name} />
 
             {/* Recent Activity */}
             <Card>

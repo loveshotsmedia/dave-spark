@@ -10,6 +10,7 @@ import Chat from "./pages/Chat";
 import Contacts from "./pages/Contacts";
 import ContactProfile from "./pages/ContactProfile";
 import ContentLibraryPage from "./pages/ContentLibraryPage";
+import Campaigns from "./pages/Campaigns";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/contacts/:id" element={<ContactProfile />} />
           <Route path="/content-library" element={<ContentLibraryPage />} />
+          <Route path="/campaigns" element={<Campaigns />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
