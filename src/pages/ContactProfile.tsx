@@ -417,9 +417,12 @@ export default function ContactProfile() {
                       .sort((a, b) => {
                         const getDate = (item: Conversation | Task | Appointment): string | undefined => {
                           if ('channel' in item) return item.created_at; // Conversation
-                          if ('title' in item && 'scheduled_at' in item) return item.scheduled_at || item.start_time; // Appointment
-                          if ('title' in item && 'status' in item) return (item as Task).due_date; // Task
-                          return undefined;
+                          if ('due_date' in item && !('scheduled_at' in item) && !('start_time' in item)) {
+                            return (item as Task).due_date; // Task
+                          }
+                          // Appointment - check both possible date fields
+                          const appt = item as Appointment;
+                          return appt.scheduled_at || appt.start_time;
                         };
                         return new Date(getDate(b) || 0).getTime() - new Date(getDate(a) || 0).getTime();
                       })
