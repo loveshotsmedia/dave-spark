@@ -143,8 +143,8 @@ export function KnowledgeLibrary({ onClose }: KnowledgeLibraryProps) {
                 className="rounded-lg border border-border bg-card p-3 space-y-2 hover:bg-accent/50 transition-colors"
               >
                 <h4 className="font-medium text-foreground">{entry.title}</h4>
-                {entry.summary && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">{entry.summary}</p>
+                {entry.content_summary && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">{entry.content_summary}</p>
                 )}
                 <div className="flex items-center justify-between">
                   <div className="flex flex-wrap gap-1">
@@ -157,7 +157,7 @@ export function KnowledgeLibrary({ onClose }: KnowledgeLibraryProps) {
                   </div>
                   <div className="flex items-center text-xs text-muted-foreground">
                     <Clock className="h-3 w-3 mr-1" />
-                    {entry.createdAt ? format(new Date(entry.createdAt), "MMM d, yyyy") : "—"}
+                    {entry.created_at ? format(new Date(entry.created_at), "MMM d, yyyy") : "—"}
                   </div>
                 </div>
               </div>

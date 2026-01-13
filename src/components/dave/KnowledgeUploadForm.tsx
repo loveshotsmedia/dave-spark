@@ -36,7 +36,12 @@ export function KnowledgeUploadForm({ onSuccess, onCancel }: KnowledgeUploadForm
 
     setIsLoading(true);
     try {
-      const result = await uploadKnowledge(title, content, "manual_entry", { tags: selectedTags });
+      const result = await uploadKnowledge({
+        title,
+        content,
+        sourceType: "manual_entry",
+        tags: selectedTags,
+      });
       
       if (result.success) {
         toast.success("Knowledge entry uploaded successfully");
