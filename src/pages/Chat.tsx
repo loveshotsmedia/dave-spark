@@ -18,6 +18,7 @@ import { SMSComposer } from "@/components/dave/SMSComposer";
 import { EmailComposer } from "@/components/dave/EmailComposer";
 import { PreCallModal } from "@/components/dave/PreCallModal";
 import { DocumentCallModal } from "@/components/dave/DocumentCallModal";
+import { VoiceCallPanel } from "@/components/dave/VoiceCallPanel";
 import { Contact } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
@@ -38,6 +39,7 @@ export default function Chat() {
   const [isGAAROpen, setIsGAAROpen] = useState(false);
   const [isSMSOpen, setIsSMSOpen] = useState(false);
   const [isEmailOpen, setIsEmailOpen] = useState(false);
+  const [isVoiceCallOpen, setIsVoiceCallOpen] = useState(false);
 
   // Modal states
   const [preCallContact, setPreCallContact] = useState<{ id: string; name: string } | null>(null);
@@ -126,6 +128,7 @@ export default function Chat() {
         onGAARClick={() => setIsGAAROpen(true)}
         onSMSClick={() => setIsSMSOpen(true)}
         onEmailClick={() => setIsEmailOpen(true)}
+        onVoiceCallClick={() => setIsVoiceCallOpen(true)}
       />
 
       {/* Slide Panels */}
@@ -184,6 +187,11 @@ export default function Chat() {
       <EmailComposer
         isOpen={isEmailOpen}
         onClose={() => setIsEmailOpen(false)}
+      />
+
+      <VoiceCallPanel
+        isOpen={isVoiceCallOpen}
+        onClose={() => setIsVoiceCallOpen(false)}
       />
 
       {/* Pre-Call Modal */}
