@@ -741,3 +741,81 @@ export async function getDraft(recipientId: string, purpose: string, keyPoints: 
     body: { recipientId, purpose, keyPoints },
   });
 }
+
+// ========== SMS ==========
+export interface SMSRequest {
+  to: string;
+  message: string;
+  contactId?: string;
+}
+
+export interface SMSContentRequest {
+  contactId: string;
+  contentId: string;
+  message?: string;
+}
+
+export interface SMSResult {
+  success: boolean;
+  sid?: string;
+  error?: string;
+}
+
+export async function sendSMS(request: SMSRequest): Promise<SMSResult> {
+  return daveAPI<SMSResult>("sms/send", { method: "POST", body: request });
+}
+
+export async function sendContentSMS(request: SMSContentRequest): Promise<SMSResult> {
+  return daveAPI<SMSResult>("sms/send-content", { method: "POST", body: request });
+}
+
+// ========== CONTENT LIBRARY ==========
+export interface ContentItem {
+  id: string;
+  title: string;
+  content_type: "proposal" | "video" | "article" | "document" | "presentation" | "spreadsheet" | "image";
+  description?: string;
+  url?: string;
+  file_path?: string;
+  tags?: string[];
+  topic_keywords?: string[];
+  audience?: "client" | "advisor" | "internal";
+  created_at: string;
+}
+
+export interface ContentUploadRequest {
+  title: string;
+  content_type: "proposal" | "video" | "article" | "document" | "presentation" | "spreadsheet" | "image";
+  description?: string;
+  url?: string;
+  file_content?: string;
+  file_name?: string;
+  tags?: string[];
+  topic_keywords?: string[];
+  audience?: "client" | "advisor" | "internal";
+}
+
+export async function uploadContent(request: ContentUploadRequest): Promise<{ success: boolean; id?: string }> {
+  return daveAPI("content/upload", { method: "POST", body: request });
+}
+
+export async function listContent(filters?: {
+  content_type?: string;
+  audience?: string;
+  tags?: string[];
+  limit?: number;
+}): Promise<{ content: ContentItem[] }> {
+  return daveAPI("content/list", { method: "POST", body: filters || {} });
+}
+
+export async function getContent(id: string): Promise<{ content: ContentItem | null }> {
+  return daveAPI("content/get", { method: "POST", body: { id } });
+}
+
+export async function deleteContent(id: string): Promise<{ success: boolean }> {
+  return daveAPI("content/delete", { method: "POST", body: { id } });
+}
+
+export async function searchContent(query: string, limit?: number): Promise<{ content: ContentItem[] }> {
+  return daveAPI("content/search", { method: "POST", body: { query, limit } });
+}

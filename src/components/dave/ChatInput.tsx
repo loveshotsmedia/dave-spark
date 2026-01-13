@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, FileText, Database, Calendar, Radio, Paperclip, X, Upload } from "lucide-react";
+import { ArrowUp, FileText, Database, Calendar, Radio, Paperclip, X, Upload, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ interface ChatInputProps {
   onQueryClick: () => void;
   onCalendarClick: () => void;
   onChannelsClick: () => void;
+  onContentLibraryClick: () => void;
 }
 
 export function ChatInput({
@@ -20,6 +21,7 @@ export function ChatInput({
   onQueryClick,
   onCalendarClick,
   onChannelsClick,
+  onContentLibraryClick,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -217,6 +219,11 @@ export function ChatInput({
             icon={<Radio className="h-4 w-4" />}
             label="Channels"
             onClick={onChannelsClick}
+          />
+          <QuickActionButton
+            icon={<Library className="h-4 w-4" />}
+            label="Content"
+            onClick={onContentLibraryClick}
           />
         </div>
       </div>

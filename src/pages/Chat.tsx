@@ -11,6 +11,7 @@ import { QueryPanel } from "@/components/dave/QueryPanel";
 import { CalendarPanel } from "@/components/dave/CalendarPanel";
 import { ChannelsPanel } from "@/components/dave/ChannelsPanel";
 import { SettingsPanel } from "@/components/dave/SettingsPanel";
+import { ContentLibrary } from "@/components/dave/ContentLibrary";
 import { PreCallModal } from "@/components/dave/PreCallModal";
 import { DocumentCallModal } from "@/components/dave/DocumentCallModal";
 import { Contact } from "@/lib/api";
@@ -28,6 +29,7 @@ export default function Chat() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isChannelsOpen, setIsChannelsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isContentLibraryOpen, setIsContentLibraryOpen] = useState(false);
 
   // Modal states
   const [preCallContact, setPreCallContact] = useState<{ id: string; name: string } | null>(null);
@@ -111,6 +113,7 @@ export default function Chat() {
         onQueryClick={() => setIsQueryOpen(true)}
         onCalendarClick={() => setIsCalendarOpen(true)}
         onChannelsClick={() => setIsChannelsOpen(true)}
+        onContentLibraryClick={() => setIsContentLibraryOpen(true)}
       />
 
       {/* Slide Panels */}
@@ -144,6 +147,11 @@ export default function Chat() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onLogout={handleLogout}
+      />
+
+      <ContentLibrary
+        isOpen={isContentLibraryOpen}
+        onClose={() => setIsContentLibraryOpen(false)}
       />
 
       {/* Pre-Call Modal */}
