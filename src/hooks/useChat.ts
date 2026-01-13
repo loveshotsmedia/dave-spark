@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
-import { Message, chat, ExtractionProgress } from "@/lib/api";
+import { ChatMessage as APIChatMessage, chat, ExtractionProgress } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
-export interface ChatMessage extends Message {
+export interface ChatMessage extends APIChatMessage {
   id: string;
   timestamp: Date;
   isLoading?: boolean;

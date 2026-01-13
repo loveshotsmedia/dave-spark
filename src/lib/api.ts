@@ -5,16 +5,23 @@ import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 // Set worker path for PDF.js using the bundled worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-const API_BASE = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
+const DAVE_API_URL = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
+const AUTH_HEADER = "I love Cameron";
 
-async function apiRequest<T>(endpoint: string, method = "POST", body?: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE}/${endpoint}`, {
-    method,
+async function daveAPI<T>(
+  endpoint: string,
+  options: {
+    method?: "GET" | "POST" | "PUT" | "DELETE";
+    body?: unknown;
+  } = {}
+): Promise<T> {
+  const response = await fetch(`${DAVE_API_URL}/${endpoint}`, {
+    method: options.method || "GET",
     headers: {
       "Content-Type": "application/json",
-      "x-owner-auth": "I love Cameron",
+      "x-owner-auth": AUTH_HEADER,
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
   if (!response.ok) {
@@ -53,8 +60,8 @@ async function extractTextFromPDF(
   return fullText;
 }
 
-// ========== CHAT ==========
-export interface Message {
+// ========== CHAT TYPES ==========
+export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
@@ -62,14 +69,28 @@ export interface Message {
 export interface ChatFile {
   name: string;
   type: string;
-  content: string;
+  content: string; // base64 encoded or extracted text
 }
 
+export interface ChatRequest {
+  messages: ChatMessage[];
+  context?: string;
+  contactId?: string;
+  files?: ChatFile[];
+}
+
+export interface ChatResponse {
+  response: string;
+  thinking?: string;
+  context?: string;
+}
+
+// ========== CHAT ==========
 export async function chat(
   message: string,
   files?: File[],
   onProgress?: (progress: ExtractionProgress) => void
-): Promise<{ response: string; context?: string; documentsUploaded?: number }> {
+): Promise<{ response: string; context?: string; thinking?: string; documentsUploaded?: number }> {
   let documentsUploaded = 0;
   const processedFiles: ChatFile[] = [];
 
@@ -106,12 +127,14 @@ export async function chat(
         totalFiles: pdfFiles.length,
       });
 
-      await uploadKnowledge(
-        file.name.replace('.pdf', ''),
+      await uploadKnowledge({
+        title: file.name.replace('.pdf', ''),
         content,
-        'proposal',
-        { tags: ['uploaded', 'document'] }
-      );
+        sourceType: 'file',
+        fileName: file.name,
+        fileType: file.type,
+        tags: ['uploaded', 'document'],
+      });
       
       processedFiles.push({
         name: file.name,
@@ -128,25 +151,38 @@ export async function chat(
       fileIndex: pdfFiles.length,
       totalFiles: pdfFiles.length,
     });
-
-    if (documentsUploaded > 0) {
-      const fileNames = pdfFiles.map(f => f.name).join(', ');
-      message = `I just uploaded "${fileNames}". ${message}`;
-    }
   }
 
-  const response = await apiRequest<{ response: string; context?: string }>("chat", "POST", {
-    message,
-    files: processedFiles.length > 0 ? processedFiles : undefined,
+  const messages: ChatMessage[] = [{ role: "user", content: message }];
+  
+  if (documentsUploaded > 0) {
+    const fileNames = files!.filter(f => f.type === 'application/pdf').map(f => f.name).join(', ');
+    messages[0].content = `I just uploaded "${fileNames}". ${message}`;
+  }
+
+  const response = await daveAPI<ChatResponse>("chat", {
+    method: "POST",
+    body: {
+      messages,
+      files: processedFiles.length > 0 ? processedFiles : undefined,
+    },
   });
   
   return { ...response, documentsUploaded };
 }
 
+// Chat with full message history support
+export async function chatWithHistory(request: ChatRequest): Promise<ChatResponse> {
+  return daveAPI<ChatResponse>("chat", {
+    method: "POST",
+    body: request,
+  });
+}
+
 // ========== CONTACTS ==========
 export interface Contact {
   id: string;
-  first_name: string;
+  first_name?: string;
   last_name?: string;
   full_name: string;
   email?: string;
@@ -157,20 +193,29 @@ export interface Contact {
   net_worth?: number;
   tags?: string[];
   notes?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export async function searchContacts(query: string): Promise<{ contacts: Contact[] }> {
-  return apiRequest("contacts/search", "POST", { query });
+  return daveAPI("contacts/search", {
+    method: "POST",
+    body: { query },
+  });
 }
 
 export async function getContact(id: string): Promise<{ contact: Contact; clientFile: unknown }> {
-  return apiRequest("contacts/get", "POST", { id });
+  return daveAPI("contacts/get", {
+    method: "POST",
+    body: { id },
+  });
 }
 
 export async function quickAddContact(description: string): Promise<{ success: boolean; contact?: Contact; message: string }> {
-  return apiRequest("quick-add", "POST", { description });
+  return daveAPI("quick-add", {
+    method: "POST",
+    body: { description },
+  });
 }
 
 // ========== APPOINTMENTS ==========
@@ -179,7 +224,7 @@ export interface Appointment {
   contact_id?: string;
   title?: string;
   start_time: string;
-  scheduled_at: string;
+  scheduled_at?: string;
   duration_minutes?: number;
   location?: string;
   notes?: string;
@@ -191,7 +236,10 @@ export async function getAppointments(options?: {
   upcoming?: boolean;
   limit?: number;
 }): Promise<{ appointments: Appointment[] }> {
-  return apiRequest("appointments", "POST", options || {});
+  return daveAPI("appointments", {
+    method: "POST",
+    body: options || {},
+  });
 }
 
 // ========== TASKS ==========
@@ -211,119 +259,242 @@ export async function getTasks(options?: {
   contactId?: string;
   limit?: number;
 }): Promise<{ tasks: Task[] }> {
-  return apiRequest("tasks", "POST", options || {});
+  return daveAPI("tasks", {
+    method: "POST",
+    body: options || {},
+  });
 }
 
-// ========== ALIEN FEATURES ==========
-export interface Suggestion {
-  action: string;
-  reason: string;
-  priority: "high" | "medium" | "low";
+// ========== FINANCIAL CALCULATIONS ==========
+export interface EstateFreezeRequest {
+  businessValue: number;
+  acb: number;
+  ownerAge: number;
+  growthRate?: number;
+  province?: "ontario" | "manitoba" | "alberta" | "bc";
 }
 
-export interface Risk {
-  severity: "critical" | "warning" | "info";
-  type: string;
-  description: string;
-  contactName?: string;
-  recommendedAction: string;
+export interface EstateFreezeResult {
+  currentValue: number;
+  acb: number;
+  unrealizedGain: number;
+  estimatedTaxOnDeath: number;
+  preferredShareValue: number;
+  commonShareGrowthPotential: string;
+  taxDeferralBenefit: number;
+  lcgeAvailable: number;
+  lcgeApplied: number;
+  netTaxableGain: number;
+  recommendation: string;
 }
 
-export async function getPreCallBriefing(contactId: string): Promise<{ briefing: string }> {
-  return apiRequest("alien/precall", "POST", { contactId });
+export interface IFARequest {
+  annualDistribution: number;
+  years: number;
+  interestRate?: number;
+  initialLoan?: number;
 }
 
-export async function getAnticipatoryActions(context?: {
-  lastAction?: string;
-  currentScreen?: string;
-  currentContactId?: string;
-}): Promise<{ suggestions: Suggestion[] }> {
-  return apiRequest("alien/anticipate", "POST", { context: context || {} });
-}
-
-export async function documentCall(transcript: string, contactId?: string): Promise<{
-  summary: string;
-  keyPoints: string[];
-  actionItems: Array<{ task: string; owner: string; deadline?: string }>;
-  sentiment: "positive" | "neutral" | "negative";
-  followUpDate?: string;
-  tags: string[];
-}> {
-  return apiRequest("alien/document", "POST", { transcript, contactId });
-}
-
-export async function getRisks(): Promise<{ risks: Risk[] }> {
-  return apiRequest("alien/risks", "POST", {});
-}
-
-export async function getRelationships(query: string): Promise<{ analysis: string }> {
-  return apiRequest("alien/relationships", "POST", { query });
-}
-
-export async function getSentimentTrajectory(contactId: string): Promise<{ analysis: string }> {
-  return apiRequest("alien/sentiment", "POST", { contactId });
-}
-
-export async function orchestrate(command: string): Promise<{
-  interpretation: string;
-  actions: Array<{ type: string; details: string; status: string }>;
-  summary: string;
-}> {
-  return apiRequest("alien/orchestrate", "POST", { command });
-}
-
-export async function getOpportunities(): Promise<{
-  opportunities: Array<{
-    type: string;
-    description: string;
-    contactName: string;
-    potentialValue: string;
-    suggestedAction: string;
-    confidence: "high" | "medium" | "low";
+export interface IFAResult {
+  initialLoanAmount: number;
+  annualDistribution: number;
+  interestRate: number;
+  years: number;
+  projectedLoanBalance: number;
+  totalInterestPaid: number;
+  requiredDeathBenefit: number;
+  netToEstate: number;
+  yearByYear: Array<{
+    year: number;
+    distribution: number;
+    interest: number;
+    loanBalance: number;
   }>;
-}> {
-  return apiRequest("alien/opportunities", "POST", {});
 }
 
-export async function analyzeCounterfactual(scenario: string): Promise<{ analysis: string }> {
-  return apiRequest("alien/counterfactual", "POST", { scenario });
+export interface TaxCalculationRequest {
+  income: number;
+  province?: "ontario" | "manitoba" | "alberta" | "bc";
 }
 
-export async function getDraft(recipientId: string, purpose: string, keyPoints: string[]): Promise<{
-  draft: string;
-  styleNotes: string;
-}> {
-  return apiRequest("alien/draft", "POST", { recipientId, purpose, keyPoints });
+export interface TaxCalculationResult {
+  federalRate: number;
+  provincialRate: number;
+  combinedRate: number;
+  taxOnIncome: number;
+}
+
+export interface EstateEqualizationRequest {
+  businessValue: number;
+  totalChildren: number;
+  childrenInBusiness: number;
+  otherAssets?: number;
+  ifaLoanBalance?: number;
+}
+
+export interface EstateEqualizationResult {
+  businessValue: number;
+  totalChildren: number;
+  childrenInBusiness: number;
+  childrenOutsideBusiness: number;
+  totalEstateValue: number;
+  equalSharePerChild: number;
+  businessChildrenReceive: number;
+  nonBusinessChildrenNeed: number;
+  insuranceRequired: number;
+  recommendation: string;
+}
+
+export async function calculateEstateFreeze(request: EstateFreezeRequest): Promise<EstateFreezeResult> {
+  return daveAPI<EstateFreezeResult>("calculate/estate-freeze", {
+    method: "POST",
+    body: request,
+  });
+}
+
+export async function calculateIFA(request: IFARequest): Promise<IFAResult> {
+  return daveAPI<IFAResult>("calculate/ifa", {
+    method: "POST",
+    body: request,
+  });
+}
+
+export async function calculateTax(request: TaxCalculationRequest): Promise<TaxCalculationResult> {
+  return daveAPI<TaxCalculationResult>("calculate/tax", {
+    method: "POST",
+    body: request,
+  });
+}
+
+export async function calculateEqualization(request: EstateEqualizationRequest): Promise<EstateEqualizationResult> {
+  return daveAPI<EstateEqualizationResult>("calculate/equalization", {
+    method: "POST",
+    body: request,
+  });
+}
+
+// ========== GAAR ANALYSIS ==========
+export interface GAARCase {
+  name: string;
+  citation: string;
+  year: number;
+  principle: string;
+  key_quote?: string;
+  outcome: string;
+  relevance: string[];
+}
+
+export interface GAARAnalysisResult {
+  riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  riskScore: number;
+  triggeredRedFlags: string[];
+  relevantCases: Array<{
+    name: string;
+    citation: string;
+    relevance: string;
+  }>;
+  itaSections: Array<{
+    section: string;
+    title: string;
+    relevance: string;
+  }>;
+  recommendations: string[];
+  safeHarbors: string[];
+}
+
+export async function analyzeGAAR(scenario: string): Promise<GAARAnalysisResult> {
+  return daveAPI<GAARAnalysisResult>("gaar/analyze", {
+    method: "POST",
+    body: { scenario },
+  });
+}
+
+export async function getGAARCases(): Promise<{ cases: GAARCase[] }> {
+  return daveAPI<{ cases: GAARCase[] }>("gaar/cases");
+}
+
+export async function getITASections(): Promise<{ sections: Record<string, unknown> }> {
+  return daveAPI<{ sections: Record<string, unknown> }>("gaar/sections");
+}
+
+// ========== EMAIL ==========
+export interface EmailRequest {
+  to: string;
+  subject: string;
+  html: string;
+  cc?: string;
+  bcc?: string;
+  attachments?: Array<{
+    filename: string;
+    content: string;
+  }>;
+}
+
+export interface EmailResult {
+  success: boolean;
+  id?: string;
+  error?: string;
+}
+
+export async function sendEmail(request: EmailRequest): Promise<EmailResult> {
+  return daveAPI<EmailResult>("email/send", {
+    method: "POST",
+    body: request,
+  });
+}
+
+// ========== PROPOSALS ==========
+export interface ProposalRequest {
+  contactId?: string;
+  clientName: string;
+  clientDetails: string;
+  proposalType: "estate_freeze" | "ifa" | "insurance" | "corporate_restructuring" | "general";
+  templateId?: string;
+  additionalContext?: string;
+  sendEmail?: boolean;
+  emailTo?: string;
+}
+
+export interface ProposalResult {
+  proposal: string;
+  calculations?: unknown;
+  gaarAnalysis?: GAARAnalysisResult;
+  emailSent?: boolean;
+  emailId?: string;
+}
+
+export async function generateProposal(request: ProposalRequest): Promise<ProposalResult> {
+  return daveAPI<ProposalResult>("proposal/generate", {
+    method: "POST",
+    body: request,
+  });
 }
 
 // ========== KNOWLEDGE BASE ==========
 export interface KnowledgeEntry {
   id: string;
   title: string;
-  content: string;
-  sourceType: string;
+  source_type: string;
+  content_summary?: string;
+  category: string[];
   tags: string[];
-  summary?: string;
-  createdAt: string;
+  created_at: string;
 }
 
-export async function uploadKnowledge(
-  title: string,
-  content: string,
-  sourceType?: string,
-  metadata?: {
-    fileName?: string;
-    fileType?: string;
-    tags?: string[];
-    clientSpecific?: boolean;
-    relatedContactId?: string;
-  }
-): Promise<{ success: boolean; id?: string; message: string }> {
-  return apiRequest("knowledge/upload", "POST", {
-    title,
-    content,
-    sourceType: sourceType || "manual_entry",
-    ...metadata,
+export interface KnowledgeUploadRequest {
+  title: string;
+  content: string;
+  sourceType?: "file" | "article" | "proposal" | "regulation" | "manual_entry";
+  fileName?: string;
+  fileType?: string;
+  tags?: string[];
+  isTemplate?: boolean;
+}
+
+export async function uploadKnowledge(request: KnowledgeUploadRequest): Promise<{ success: boolean; id?: string; message?: string }> {
+  return daveAPI("knowledge/upload", {
+    method: "POST",
+    body: request,
   });
 }
 
@@ -332,19 +503,37 @@ export async function listKnowledge(options?: {
   sourceType?: string;
   limit?: number;
 }): Promise<{ entries: KnowledgeEntry[] }> {
-  return apiRequest("knowledge/list", "POST", options || {});
+  return daveAPI("knowledge/list", {
+    method: "POST",
+    body: options || {},
+  });
 }
 
 export async function searchKnowledge(query: string, limit?: number): Promise<{ results: KnowledgeEntry[] }> {
-  return apiRequest("knowledge/search", "POST", { query, limit });
+  return daveAPI("knowledge/search", {
+    method: "POST",
+    body: { query, limit: limit || 5 },
+  });
 }
 
 // ========== CANADIAN FINANCIAL DATA ==========
-export interface FinancialData {
-  bankOfCanadaRate: number;
-  primeRate: number;
-  cpi: number;
-  lastUpdated: string;
+export interface CanadianFinancialData {
+  rrsp_limit: number;
+  tfsa_limit: number;
+  tfsa_cumulative: number;
+  fhsa_annual_limit: number;
+  fhsa_lifetime_limit: number;
+  cpp_max_pensionable: number;
+  cpp_contribution_rate_employee: number;
+  ei_max_insurable: number;
+  oas_clawback_threshold: number;
+  capital_gains_inclusion_rate: number;
+  capital_gains_inclusion_rate_over_250k: number;
+  lifetime_capital_gains_exemption: number;
+  prescribed_rate_q1: number;
+  federal_tax_brackets: Array<{ min: number; max: number; rate: number }>;
+  manitoba_tax_brackets: Array<{ min: number; max: number; rate: number }>;
+  ontario_tax_brackets: Array<{ min: number; max: number; rate: number }>;
 }
 
 export interface ContributionLimits {
@@ -355,16 +544,21 @@ export interface ContributionLimits {
   year: number;
 }
 
-export async function getFinancialData(): Promise<{ data: FinancialData }> {
-  return apiRequest("financial/current", "POST", {});
+export async function getFinancialData(): Promise<{ data: CanadianFinancialData }> {
+  return daveAPI<{ data: CanadianFinancialData }>("financial/current");
 }
 
-export async function getTaxBrackets(): Promise<{ federal: unknown[]; year: number }> {
-  return apiRequest("financial/tax-brackets", "POST", {});
+export async function getTaxBrackets(): Promise<{
+  federal: unknown[];
+  ontario: unknown[];
+  manitoba: unknown[];
+  year: number;
+}> {
+  return daveAPI("financial/tax-brackets");
 }
 
 export async function getContributionLimits(): Promise<ContributionLimits> {
-  return apiRequest("financial/contribution-limits", "POST", {});
+  return daveAPI("financial/contribution-limits");
 }
 
 // ========== COMPLIANCE ==========
@@ -383,26 +577,46 @@ export interface ComplianceAnalysis {
 }
 
 export async function checkCompliance(message: string): Promise<ComplianceCheck> {
-  return apiRequest("compliance/check", "POST", { message });
+  return daveAPI("compliance/check", {
+    method: "POST",
+    body: { message },
+  });
 }
 
 export async function getComplianceRules(ruleType?: string): Promise<{ rules: unknown[] }> {
-  return apiRequest("compliance/rules", "POST", { ruleType });
+  return daveAPI("compliance/rules", {
+    method: "POST",
+    body: { ruleType },
+  });
 }
 
 export async function analyzeCompliance(scenario: string): Promise<ComplianceAnalysis> {
-  return apiRequest("compliance/analyze", "POST", { scenario });
+  return daveAPI("compliance/analyze", {
+    method: "POST",
+    body: { scenario },
+  });
 }
 
 // ========== SYSTEM ==========
-export async function getSystemStatus(): Promise<{
-  isNewAccount: boolean;
+export interface SystemStatus {
   contactCount: number;
   appointmentCount: number;
   taskCount: number;
-  suggestions: string[];
-}> {
-  return apiRequest("status", "POST", {});
+  knowledgeCount?: number;
+  model?: string;
+  isNewAccount?: boolean;
+  suggestions?: string[];
+  features?: {
+    emailEnabled: boolean;
+    thinkingEnabled: boolean;
+    gaarAnalysis: boolean;
+    financialCalculations: boolean;
+    templateExtraction: boolean;
+  };
+}
+
+export async function getSystemStatus(): Promise<SystemStatus> {
+  return daveAPI<SystemStatus>("status");
 }
 
 export async function bootstrapSampleData(): Promise<{
@@ -410,5 +624,120 @@ export async function bootstrapSampleData(): Promise<{
   message: string;
   created: { contacts?: number; tasks?: number; appointments?: number };
 }> {
-  return apiRequest("bootstrap", "POST", {});
+  return daveAPI("bootstrap", {
+    method: "POST",
+    body: {},
+  });
+}
+
+// ========== LEGACY ALIEN FEATURES (kept for compatibility) ==========
+export interface Suggestion {
+  action: string;
+  reason: string;
+  priority: "high" | "medium" | "low";
+}
+
+export interface Risk {
+  severity: "critical" | "warning" | "info";
+  type: string;
+  description: string;
+  contactName?: string;
+  recommendedAction: string;
+}
+
+export async function getPreCallBriefing(contactId: string): Promise<{ briefing: string }> {
+  return daveAPI("alien/precall", {
+    method: "POST",
+    body: { contactId },
+  });
+}
+
+export async function getAnticipatoryActions(context?: {
+  lastAction?: string;
+  currentScreen?: string;
+  currentContactId?: string;
+}): Promise<{ suggestions: Suggestion[] }> {
+  return daveAPI("alien/anticipate", {
+    method: "POST",
+    body: { context: context || {} },
+  });
+}
+
+export async function documentCall(transcript: string, contactId?: string): Promise<{
+  summary: string;
+  keyPoints: string[];
+  actionItems: Array<{ task: string; owner: string; deadline?: string }>;
+  sentiment: "positive" | "neutral" | "negative";
+  followUpDate?: string;
+  tags: string[];
+}> {
+  return daveAPI("alien/document", {
+    method: "POST",
+    body: { transcript, contactId },
+  });
+}
+
+export async function getRisks(): Promise<{ risks: Risk[] }> {
+  return daveAPI("alien/risks", {
+    method: "POST",
+    body: {},
+  });
+}
+
+export async function getRelationships(query: string): Promise<{ analysis: string }> {
+  return daveAPI("alien/relationships", {
+    method: "POST",
+    body: { query },
+  });
+}
+
+export async function getSentimentTrajectory(contactId: string): Promise<{ analysis: string }> {
+  return daveAPI("alien/sentiment", {
+    method: "POST",
+    body: { contactId },
+  });
+}
+
+export async function orchestrate(command: string): Promise<{
+  interpretation: string;
+  actions: Array<{ type: string; details: string; status: string }>;
+  summary: string;
+}> {
+  return daveAPI("alien/orchestrate", {
+    method: "POST",
+    body: { command },
+  });
+}
+
+export async function getOpportunities(): Promise<{
+  opportunities: Array<{
+    type: string;
+    description: string;
+    contactName: string;
+    potentialValue: string;
+    suggestedAction: string;
+    confidence: "high" | "medium" | "low";
+  }>;
+}> {
+  return daveAPI("alien/opportunities", {
+    method: "POST",
+    body: {},
+  });
+}
+
+export async function analyzeCounterfactual(scenario: string): Promise<{ analysis: string }> {
+  return daveAPI("alien/counterfactual", {
+    method: "POST",
+    body: { scenario },
+  });
+}
+
+export async function getDraft(recipientId: string, purpose: string, keyPoints: string[]): Promise<{
+  draft: string;
+  styleNotes: string;
+}> {
+  return daveAPI("alien/draft", {
+    method: "POST",
+    body: { recipientId, purpose, keyPoints },
+  });
 }

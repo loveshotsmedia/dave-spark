@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { DollarSign, Loader2, AlertCircle, RefreshCw, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getContributionLimits, getFinancialData, ContributionLimits, FinancialData } from "@/lib/api";
+import { getContributionLimits, getFinancialData, ContributionLimits, CanadianFinancialData } from "@/lib/api";
 
 interface TaxReferenceCardProps {
   compact?: boolean;
@@ -10,7 +10,7 @@ interface TaxReferenceCardProps {
 
 export function TaxReferenceCard({ compact = false }: TaxReferenceCardProps) {
   const [limits, setLimits] = useState<ContributionLimits | null>(null);
-  const [financialData, setFinancialData] = useState<FinancialData | null>(null);
+  const [financialData, setFinancialData] = useState<CanadianFinancialData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,9 +81,9 @@ export function TaxReferenceCard({ compact = false }: TaxReferenceCardProps) {
   ] : [];
 
   const rateItems = financialData ? [
-    { label: "BoC Rate", value: formatPercent(financialData.bankOfCanadaRate) },
-    { label: "Prime Rate", value: formatPercent(financialData.primeRate) },
-    { label: "CPI", value: formatPercent(financialData.cpi) },
+    { label: "Prescribed Rate", value: formatPercent(financialData.prescribed_rate_q1) },
+    { label: "Cap Gains Rate", value: formatPercent(financialData.capital_gains_inclusion_rate * 100) },
+    { label: "LCGE", value: formatCurrency(financialData.lifetime_capital_gains_exemption) },
   ] : [];
 
   if (compact) {
@@ -139,9 +139,6 @@ export function TaxReferenceCard({ compact = false }: TaxReferenceCardProps) {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Last updated: {financialData.lastUpdated ? new Date(financialData.lastUpdated).toLocaleDateString() : "—"}
-            </p>
           </div>
         )}
       </CardContent>
