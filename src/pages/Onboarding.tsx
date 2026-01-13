@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { completeOnboarding } from "@/lib/api";
 
 export default function Onboarding() {
   const { user, isAuthenticated, isLoading: authLoading, onboardingComplete } = useAuth();
@@ -36,25 +36,18 @@ export default function Onboarding() {
 
     try {
       // Call the API to complete onboarding
-      const { error } = await supabase.functions.invoke("api-proxy", {
-        body: {
-          endpoint: "/api/auth/me/onboarding",
-          method: "POST",
-          body: {
-            ...formData,
-            completed: true,
-          },
-        },
+      await completeOnboarding({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        company: formData.company,
+        role: formData.role,
       });
 
-      if (error) {
-        console.error("Failed to complete onboarding:", error);
-      }
-
-      // Navigate to chat regardless (backend may already have data)
+      // Navigate to chat
       navigate("/chat");
     } catch (error) {
       console.error("Onboarding error:", error);
+      // Navigate to chat regardless (backend may already have data)
       navigate("/chat");
     } finally {
       setIsSubmitting(false);
