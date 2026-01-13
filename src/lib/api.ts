@@ -880,3 +880,80 @@ export async function deleteContent(id: string): Promise<{ success: boolean }> {
 export async function searchContent(query: string, limit?: number): Promise<{ content: ContentItem[] }> {
   return daveAPI("content/search", { method: "POST", body: { query, limit } });
 }
+
+// ========== DRIP CAMPAIGNS ==========
+export interface DripCampaign {
+  id: string;
+  name: string;
+  topic: string;
+  channel: 'email' | 'sms';
+  step_count: number;
+  description?: string;
+  is_active: boolean;
+}
+
+export interface DripEnrollment {
+  id: string;
+  contact_id: string;
+  campaign_id: string;
+  current_step: number;
+  status: 'active' | 'paused' | 'completed' | 'cancelled';
+  enrolled_at: string;
+  next_step_due_at?: string;
+  drip_campaigns?: DripCampaign;
+}
+
+export async function listCampaigns(filters?: { topic?: string; channel?: string }): Promise<{ campaigns: DripCampaign[] }> {
+  return daveAPI("campaigns/list", { method: "POST", body: filters || {} });
+}
+
+export async function getCampaign(id: string): Promise<{ campaign: DripCampaign }> {
+  return daveAPI("campaigns/get", { method: "POST", body: { id } });
+}
+
+export async function enrollInCampaign(contactId: string, campaignId: string): Promise<{ success: boolean; enrollmentId?: string; error?: string }> {
+  return daveAPI("campaigns/enroll", { method: "POST", body: { contactId, campaignId } });
+}
+
+export async function enrollByTopic(contactName: string, topic: string, channel: 'email' | 'sms' = 'email'): Promise<{ success: boolean; message: string }> {
+  return daveAPI("campaigns/enroll-by-name", { method: "POST", body: { contactName, topic, channel } });
+}
+
+export async function unenrollFromCampaign(contactId: string, campaignId?: string): Promise<{ success: boolean; count: number }> {
+  return daveAPI("campaigns/unenroll", { method: "POST", body: { contactId, campaignId } });
+}
+
+export async function getContactEnrollments(contactId: string): Promise<{ enrollments: DripEnrollment[] }> {
+  return daveAPI("campaigns/contact-enrollments", { method: "POST", body: { contactId } });
+}
+
+// ========== VOICE CALLS ==========
+export interface CallResult {
+  success: boolean;
+  callId?: string;
+  error?: string;
+}
+
+export interface CallRecord {
+  id: string;
+  contact_id?: string;
+  direction: 'inbound' | 'outbound';
+  status: string;
+  duration_seconds?: number;
+  transcript?: string;
+  summary?: string;
+  created_at: string;
+  contacts?: { full_name: string };
+}
+
+export async function initiateCall(contactId: string, context?: string, firstMessage?: string): Promise<CallResult> {
+  return daveAPI("call/initiate", { method: "POST", body: { contactId, context, firstMessage } });
+}
+
+export async function getCallHistory(contactId?: string, limit?: number): Promise<{ calls: CallRecord[] }> {
+  return daveAPI("call/history", { method: "POST", body: { contactId, limit } });
+}
+
+export async function getCall(id: string): Promise<{ call: CallRecord }> {
+  return daveAPI("call/get", { method: "POST", body: { id } });
+}
