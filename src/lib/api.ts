@@ -259,7 +259,7 @@ export async function getContact(id: string): Promise<{ contact: Contact; client
   });
 }
 
-export async function createContact(data: Omit<Contact, "id" | "created_at" | "updated_at">): Promise<{ success: boolean; contact: Contact }> {
+export async function createContact(data: Partial<Contact>): Promise<{ success: boolean; contact: Contact }> {
   return daveAPI("contacts/create", {
     method: "POST",
     body: data,
