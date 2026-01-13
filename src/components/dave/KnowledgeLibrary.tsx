@@ -33,35 +33,23 @@ export function KnowledgeLibrary({ onClose }: KnowledgeLibraryProps) {
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      fetchEntries();
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await searchKnowledge(searchQuery);
-      setEntries(result.results || []);
-    } catch (err) {
-      console.error("Search failed:", err);
-      setError("Search failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchEntries();
-  }, []);
-
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      if (searchQuery) {
-        handleSearch();
-      } else {
-        fetchEntries();
+    const debounce = setTimeout(async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        if (searchQuery.trim()) {
+          const result = await searchKnowledge(searchQuery, 10);
+          setEntries(result.results || []);
+        } else {
+          const result = await listKnowledge();
+          setEntries(result.entries || []);
+        }
+      } catch (err) {
+        console.error("Failed to load knowledge:", err);
+        setError("Failed to load");
+      } finally {
+        setIsLoading(false);
       }
     }, 300);
     return () => clearTimeout(debounce);
@@ -146,10 +134,22 @@ export function KnowledgeLibrary({ onClose }: KnowledgeLibraryProps) {
                 {entry.content_summary && (
                   <p className="text-sm text-muted-foreground line-clamp-2">{entry.content_summary}</p>
                 )}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {entry.source_type && (
+                    <Badge variant="outline" className="text-xs">
+                      {entry.source_type.replace(/_/g, ' ')}
+                    </Badge>
+                  )}
+                  {entry.category?.map((cat) => (
+                    <Badge key={cat} variant="secondary" className="text-xs capitalize">
+                      {cat}
+                    </Badge>
+                  ))}
+                </div>
                 <div className="flex items-center justify-between">
                   <div className="flex flex-wrap gap-1">
                     {entry.tags?.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs capitalize">
+                      <Badge key={tag} variant="default" className="text-xs capitalize">
                         <Tag className="h-3 w-3 mr-1" />
                         {tag}
                       </Badge>
