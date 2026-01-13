@@ -12,6 +12,10 @@ import { CalendarPanel } from "@/components/dave/CalendarPanel";
 import { ChannelsPanel } from "@/components/dave/ChannelsPanel";
 import { SettingsPanel } from "@/components/dave/SettingsPanel";
 import { ContentLibrary } from "@/components/dave/ContentLibrary";
+import { CalculatorsPanel } from "@/components/dave/CalculatorsPanel";
+import { GAARAnalysisPanel } from "@/components/dave/GAARAnalysisPanel";
+import { SMSComposer } from "@/components/dave/SMSComposer";
+import { EmailComposer } from "@/components/dave/EmailComposer";
 import { PreCallModal } from "@/components/dave/PreCallModal";
 import { DocumentCallModal } from "@/components/dave/DocumentCallModal";
 import { Contact } from "@/lib/api";
@@ -30,6 +34,10 @@ export default function Chat() {
   const [isChannelsOpen, setIsChannelsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isContentLibraryOpen, setIsContentLibraryOpen] = useState(false);
+  const [isCalculatorsOpen, setIsCalculatorsOpen] = useState(false);
+  const [isGAAROpen, setIsGAAROpen] = useState(false);
+  const [isSMSOpen, setIsSMSOpen] = useState(false);
+  const [isEmailOpen, setIsEmailOpen] = useState(false);
 
   // Modal states
   const [preCallContact, setPreCallContact] = useState<{ id: string; name: string } | null>(null);
@@ -114,6 +122,10 @@ export default function Chat() {
         onCalendarClick={() => setIsCalendarOpen(true)}
         onChannelsClick={() => setIsChannelsOpen(true)}
         onContentLibraryClick={() => setIsContentLibraryOpen(true)}
+        onCalculatorsClick={() => setIsCalculatorsOpen(true)}
+        onGAARClick={() => setIsGAAROpen(true)}
+        onSMSClick={() => setIsSMSOpen(true)}
+        onEmailClick={() => setIsEmailOpen(true)}
       />
 
       {/* Slide Panels */}
@@ -152,6 +164,26 @@ export default function Chat() {
       <ContentLibrary
         isOpen={isContentLibraryOpen}
         onClose={() => setIsContentLibraryOpen(false)}
+      />
+
+      <CalculatorsPanel
+        isOpen={isCalculatorsOpen}
+        onClose={() => setIsCalculatorsOpen(false)}
+      />
+
+      <GAARAnalysisPanel
+        isOpen={isGAAROpen}
+        onClose={() => setIsGAAROpen(false)}
+      />
+
+      <SMSComposer
+        isOpen={isSMSOpen}
+        onClose={() => setIsSMSOpen(false)}
+      />
+
+      <EmailComposer
+        isOpen={isEmailOpen}
+        onClose={() => setIsEmailOpen(false)}
       />
 
       {/* Pre-Call Modal */}
