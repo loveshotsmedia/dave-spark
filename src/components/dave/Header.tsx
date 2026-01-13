@@ -1,5 +1,5 @@
-import { Settings, LogOut, Users, FolderOpen, Mail } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Settings, LogOut, Users, FolderOpen, Mail, BookOpen, Briefcase } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -18,11 +18,17 @@ interface HeaderProps {
 
 export function Header({ onLogout, onSettingsClick }: HeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
+        <div 
+          className="flex items-center gap-2 cursor-pointer" 
+          onClick={() => navigate("/chat")}
+        >
           <span className="text-xl font-semibold text-foreground">WFS</span>
           <div className="flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1">
             <span className="text-xs font-medium text-primary-foreground">Dave 2.0</span>
@@ -32,7 +38,7 @@ export function Header({ onLogout, onSettingsClick }: HeaderProps) {
         {/* Navigation Links */}
         <nav className="hidden md:flex items-center gap-1 ml-6">
           <Button
-            variant="ghost"
+            variant={isActive("/contacts") ? "secondary" : "ghost"}
             size="sm"
             onClick={() => navigate("/contacts")}
             className="text-muted-foreground hover:text-foreground"
@@ -41,7 +47,25 @@ export function Header({ onLogout, onSettingsClick }: HeaderProps) {
             Contacts
           </Button>
           <Button
-            variant="ghost"
+            variant={isActive("/cases") ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => navigate("/cases")}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Briefcase className="h-4 w-4 mr-2" />
+            Cases
+          </Button>
+          <Button
+            variant={isActive("/knowledge") ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => navigate("/knowledge")}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <BookOpen className="h-4 w-4 mr-2" />
+            Knowledge
+          </Button>
+          <Button
+            variant={isActive("/content-library") ? "secondary" : "ghost"}
             size="sm"
             onClick={() => navigate("/content-library")}
             className="text-muted-foreground hover:text-foreground"
@@ -50,7 +74,7 @@ export function Header({ onLogout, onSettingsClick }: HeaderProps) {
             Content
           </Button>
           <Button
-            variant="ghost"
+            variant={isActive("/campaigns") ? "secondary" : "ghost"}
             size="sm"
             onClick={() => navigate("/campaigns")}
             className="text-muted-foreground hover:text-foreground"
@@ -96,6 +120,14 @@ export function Header({ onLogout, onSettingsClick }: HeaderProps) {
             <DropdownMenuItem onClick={() => navigate("/contacts")} className="md:hidden">
               <Users className="mr-2 h-4 w-4" />
               Contacts
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/cases")} className="md:hidden">
+              <Briefcase className="mr-2 h-4 w-4" />
+              Cases
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/knowledge")} className="md:hidden">
+              <BookOpen className="mr-2 h-4 w-4" />
+              Knowledge Base
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/content-library")} className="md:hidden">
               <FolderOpen className="mr-2 h-4 w-4" />
