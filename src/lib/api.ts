@@ -7,6 +7,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const DAVE_API_URL = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
 const AUTH_HEADER = "I love Cameron";
+// Anon key for the dave-api Supabase project
+const DAVE_API_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljb3BxZm9oYnJkc2RxZ3BhamR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2NTcxNzAsImV4cCI6MjA1MzIzMzE3MH0.2SjkOJF5_1TkKBBJ3cWToMB1LhPHVOMfjBuQigRlDKE";
 
 async function daveAPI<T>(
   endpoint: string,
@@ -19,6 +21,7 @@ async function daveAPI<T>(
     method: options.method || "GET",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${DAVE_API_ANON_KEY}`,
       "x-owner-auth": AUTH_HEADER,
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
