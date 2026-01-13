@@ -924,6 +924,13 @@ export async function getContactEnrollments(contactId: string): Promise<{ enroll
   return daveAPI("campaigns/contact-enrollments", { method: "POST", body: { contactId } });
 }
 
+export async function updateEnrollmentStatus(
+  enrollmentId: string,
+  status: 'active' | 'paused' | 'completed' | 'cancelled'
+): Promise<{ success: boolean; enrollment?: DripEnrollment }> {
+  return daveAPI("campaigns/update-status", { method: "POST", body: { enrollmentId, status } });
+}
+
 // ========== VOICE CALLS ==========
 export interface CallResult {
   success: boolean;
