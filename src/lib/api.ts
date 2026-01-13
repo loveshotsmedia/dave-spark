@@ -281,7 +281,7 @@ export async function updateClientFile(contactId: string, data: Partial<ClientFi
 }
 
 export async function getConversations(contactId: string, limit?: number): Promise<{ conversations: Conversation[] }> {
-  return daveAPI("conversations/list", {
+  return daveAPI("contact/conversations", {
     method: "POST",
     body: { contactId, limit: limit || 20 },
   });
