@@ -8,6 +8,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 const DAVE_API_URL = "https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api";
 const AUTH_HEADER = "I love Cameron";
 
+// Public anon key for the dave-api backend (safe to ship in the frontend)
+const DAVE_API_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljb3BxZm9oYnJkc2RxZ3BhamR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2NTcxNzAsImV4cCI6MjA1MzIzMzE3MH0.2SjkOJF5_1TkKBBJ3cWToMB1LhPHVOMfjBuQigRlDKE";
+
 async function daveAPI<T>(
   endpoint: string,
   options: {
@@ -19,14 +23,23 @@ async function daveAPI<T>(
     method: options.method || "GET",
     headers: {
       "Content-Type": "application/json",
+
+      // Required by the edge-function gateway (prevents: "Missing authorization header")
+      apikey: DAVE_API_ANON_KEY,
+      Authorization: `Bearer ${DAVE_API_ANON_KEY}`,
+
+      // Existing custom auth used by your dave-api function
       "x-owner-auth": AUTH_HEADER,
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(error.error || `API error: ${response.status}`);
+    const error = await response
+      .json()
+      .catch(() => ({ error: "Unknown error" as string }));
+
+    throw new Error(error.error || error.message || `API error: ${response.status}`);
   }
 
   return response.json();
