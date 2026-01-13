@@ -998,3 +998,15 @@ export async function getCallHistory(contactId?: string, limit?: number): Promis
 export async function getCall(id: string): Promise<{ call: CallRecord }> {
   return daveAPI("call/get", { method: "POST", body: { id } });
 }
+
+// ========== ONBOARDING ==========
+export interface OnboardingData {
+  firstName: string;
+  lastName: string;
+  company?: string;
+  role?: string;
+}
+
+export async function completeOnboarding(data: OnboardingData): Promise<{ success: boolean }> {
+  return daveAPI("auth/onboarding", { method: "POST", body: { ...data, completed: true } });
+}
