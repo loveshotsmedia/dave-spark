@@ -78,6 +78,9 @@ const SOURCE_TYPE_OPTIONS = [
 
 const CATEGORY_OPTIONS = ["tax", "insurance", "estate", "investment", "corporate", "gaar", "compliance"];
 
+// Radix Select reserves "" for clearing; never use it as an item value.
+const ALL_FILTER_VALUE = "__all__";
+
 const SAMPLE_CONTENT = [
   {
     title: "What is an Insured Financing Arrangement (IFA)?",
@@ -477,12 +480,15 @@ export default function KnowledgeBase() {
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">Filters:</span>
                 </div>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <Select
+                  value={categoryFilter || ALL_FILTER_VALUE}
+                  onValueChange={(value) => setCategoryFilter(value === ALL_FILTER_VALUE ? "" : value)}
+                >
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value={ALL_FILTER_VALUE}>All Categories</SelectItem>
                     {CATEGORY_OPTIONS.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -490,12 +496,16 @@ export default function KnowledgeBase() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={sourceTypeFilter} onValueChange={setSourceTypeFilter}>
+
+                <Select
+                  value={sourceTypeFilter || ALL_FILTER_VALUE}
+                  onValueChange={(value) => setSourceTypeFilter(value === ALL_FILTER_VALUE ? "" : value)}
+                >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="All Source Types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Source Types</SelectItem>
+                    <SelectItem value={ALL_FILTER_VALUE}>All Source Types</SelectItem>
                     {SOURCE_TYPE_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
