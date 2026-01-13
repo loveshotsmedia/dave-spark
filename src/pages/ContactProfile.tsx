@@ -415,9 +415,13 @@ export default function ContactProfile() {
                   <div className="space-y-3">
                 {[...conversations.slice(0, 3), ...tasks.slice(0, 2), ...appointments.slice(0, 2)]
                       .sort((a, b) => {
-                        const dateA = 'created_at' in a ? a.created_at : ('scheduled_at' in a ? a.scheduled_at : a.start_time);
-                        const dateB = 'created_at' in b ? b.created_at : ('scheduled_at' in b ? b.scheduled_at : b.start_time);
-                        return new Date(dateB || 0).getTime() - new Date(dateA || 0).getTime();
+                        const getDate = (item: Conversation | Task | Appointment): string | undefined => {
+                          if ('channel' in item) return item.created_at; // Conversation
+                          if ('title' in item && 'scheduled_at' in item) return item.scheduled_at || item.start_time; // Appointment
+                          if ('title' in item && 'status' in item) return (item as Task).due_date; // Task
+                          return undefined;
+                        };
+                        return new Date(getDate(b) || 0).getTime() - new Date(getDate(a) || 0).getTime();
                       })
                       .slice(0, 5)
                       .map((item, index) => {
