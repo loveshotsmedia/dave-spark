@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, FileText, Database, Calendar, Radio, Paperclip, X, Upload, Library, Calculator, Shield, MessageSquare, Mail } from "lucide-react";
+import { ArrowUp, FileText, Database, Calendar, Paperclip, X, Upload, Library, Calculator, Shield, MessageSquare, Mail, Mic, MicOff, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { toast } from "@/hooks/use-toast";
 
 interface ChatInputProps {
   onSend: (message: string, files?: File[]) => void;
@@ -16,6 +18,7 @@ interface ChatInputProps {
   onGAARClick: () => void;
   onSMSClick: () => void;
   onEmailClick: () => void;
+  onVoiceCallClick: () => void;
 }
 
 export function ChatInput({
@@ -30,6 +33,7 @@ export function ChatInput({
   onGAARClick,
   onSMSClick,
   onEmailClick,
+  onVoiceCallClick,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -37,6 +41,25 @@ export function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+
+  // Voice input hook
+  const {
+    isListening,
+    interimTranscript,
+    isSupported: voiceSupported,
+    toggleListening,
+  } = useVoiceInput({
+    onTranscript: (text) => {
+      setInput((prev) => prev + text);
+    },
+    onError: (error) => {
+      toast({
+        title: "Voice input error",
+        description: error,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleSubmit = () => {
     if ((input.trim() || attachedFiles.length > 0) && !isLoading) {
@@ -171,25 +194,47 @@ export function ChatInput({
         <div className="relative">
           <Textarea
             ref={textareaRef}
-            value={input}
+            value={isListening ? input + interimTranscript : input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Message Dave 2.0... (drag & drop files here)"
+            placeholder={isListening ? "Listening..." : "Message Dave 2.0... (drag & drop files here)"}
             className={cn(
-              "min-h-[52px] resize-none pr-14 rounded-2xl border-border bg-background transition-all",
-              isDragging && "border-primary ring-2 ring-primary/20"
+              "min-h-[52px] resize-none pr-24 rounded-2xl border-border bg-background transition-all",
+              isDragging && "border-primary ring-2 ring-primary/20",
+              isListening && "border-red-500 ring-2 ring-red-500/20"
             )}
             rows={1}
             disabled={isLoading}
           />
-          <Button
-            size="icon"
-            onClick={handleSubmit}
-            disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-            className="absolute bottom-2 right-2 h-8 w-8 rounded-lg"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </Button>
+          <div className="absolute bottom-2 right-2 flex items-center gap-1">
+            {voiceSupported && (
+              <Button
+                size="icon"
+                variant={isListening ? "destructive" : "ghost"}
+                onClick={toggleListening}
+                disabled={isLoading}
+                className={cn(
+                  "h-8 w-8 rounded-lg",
+                  isListening && "animate-pulse"
+                )}
+                title={isListening ? "Stop listening" : "Voice input"}
+              >
+                {isListening ? (
+                  <MicOff className="h-4 w-4" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            <Button
+              size="icon"
+              onClick={handleSubmit}
+              disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
+              className="h-8 w-8 rounded-lg"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Hidden file input */}
@@ -207,6 +252,11 @@ export function ChatInput({
             icon={<Paperclip className="h-4 w-4" />}
             label="Attach"
             onClick={handleAttachClick}
+          />
+          <QuickActionButton
+            icon={<Phone className="h-4 w-4" />}
+            label="Calls"
+            onClick={onVoiceCallClick}
           />
           <QuickActionButton
             icon={<FileText className="h-4 w-4" />}

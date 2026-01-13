@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Mail,
   Phone,
+  PhoneCall,
   MapPin,
   Building2,
   DollarSign,
@@ -27,6 +28,7 @@ import {
   getAppointments,
   getTasks,
   getConversations,
+  initiateCall,
   Contact,
   ClientFile,
   Appointment,
@@ -118,6 +120,7 @@ export default function ContactProfile() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSendContentOpen, setIsSendContentOpen] = useState(false);
   const [isProposalOpen, setIsProposalOpen] = useState(false);
+  const [isCallingContact, setIsCallingContact] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -176,6 +179,42 @@ export default function ContactProfile() {
     });
   };
 
+  const handleInitiateCall = async () => {
+    if (!contact?.id || !contact?.phone) {
+      toast({
+        title: "Cannot call",
+        description: "This contact has no phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCallingContact(true);
+    try {
+      const result = await initiateCall(contact.id);
+      if (result.success) {
+        toast({
+          title: "Call initiated",
+          description: `Calling ${contact.full_name}...`,
+        });
+      } else {
+        toast({
+          title: "Call failed",
+          description: result.error || "Could not initiate call",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Call failed",
+        description: "Could not initiate call",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCallingContact(false);
+    }
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -210,6 +249,19 @@ export default function ContactProfile() {
               <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
                 <Edit className="h-4 w-4 mr-1" />
                 Edit
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleInitiateCall}
+                disabled={isCallingContact || !contact?.phone}
+              >
+                {isCallingContact ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <PhoneCall className="h-4 w-4 mr-1" />
+                )}
+                Call
               </Button>
               <Button variant="outline" size="sm" onClick={() => setIsSMSOpen(true)}>
                 <MessageSquare className="h-4 w-4 mr-1" />
