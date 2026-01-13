@@ -211,21 +211,23 @@ export function CampaignEnrollmentCard({ contactId, contactName }: CampaignEnrol
                   <SelectValue placeholder="Select a campaign" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableCampaigns.map(campaign => (
-                    <SelectItem key={campaign.id} value={campaign.id}>
-                      <div className="flex items-center gap-2">
-                        {campaign.channel === 'email' ? (
-                          <Mail className="h-4 w-4" />
-                        ) : (
-                          <MessageSquare className="h-4 w-4" />
-                        )}
-                        <span>{campaign.name}</span>
-                        <Badge variant="outline" className="ml-1 text-xs">
-                          {campaign.topic.replace('_', ' ')}
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {availableCampaigns
+                    .filter(campaign => campaign.id && campaign.id.trim() !== "")
+                    .map(campaign => (
+                      <SelectItem key={campaign.id} value={campaign.id}>
+                        <div className="flex items-center gap-2">
+                          {campaign.channel === 'email' ? (
+                            <Mail className="h-4 w-4" />
+                          ) : (
+                            <MessageSquare className="h-4 w-4" />
+                          )}
+                          <span>{campaign.name}</span>
+                          <Badge variant="outline" className="ml-1 text-xs">
+                            {campaign.topic.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
 

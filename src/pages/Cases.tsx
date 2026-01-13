@@ -519,13 +519,15 @@ export default function Cases() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select a contact" />
                 </SelectTrigger>
-                <SelectContent>
-                  {contacts.map((contact) => (
-                    <SelectItem key={contact.id} value={contact.id}>
-                      {contact.full_name}
-                      {contact.company && ` (${contact.company})`}
-                    </SelectItem>
-                  ))}
+              <SelectContent>
+                  {contacts
+                    .filter((contact) => contact.id && contact.id.trim() !== "")
+                    .map((contact) => (
+                      <SelectItem key={contact.id} value={contact.id}>
+                        {contact.full_name}
+                        {contact.company && ` (${contact.company})`}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
