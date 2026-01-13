@@ -204,10 +204,66 @@ export async function searchContacts(query: string): Promise<{ contacts: Contact
   });
 }
 
-export async function getContact(id: string): Promise<{ contact: Contact; clientFile: unknown }> {
+// Client file interface for detailed financial data
+export interface ClientFile {
+  id: string;
+  contact_id: string;
+  business_name?: string;
+  business_value?: number;
+  acb?: number;
+  planning_needs?: string[];
+  children?: Array<{
+    name: string;
+    age: number;
+    in_business: boolean;
+  }>;
+  existing_policies?: Array<{
+    type: string;
+    face_amount: number;
+    carrier: string;
+  }>;
+  coi_accountant?: string;
+  coi_lawyer?: string;
+  notes?: string;
+  updated_at?: string;
+}
+
+// Conversation interface for communication history
+export interface Conversation {
+  id: string;
+  contact_id: string;
+  channel: "sms" | "email" | "voice" | "in_person";
+  direction: "inbound" | "outbound";
+  transcript: string;
+  outcome?: string;
+  created_at: string;
+}
+
+export async function getContact(id: string): Promise<{ contact: Contact; clientFile: ClientFile | null }> {
   return daveAPI("contacts/get", {
     method: "POST",
     body: { id },
+  });
+}
+
+export async function updateContact(id: string, data: Partial<Contact>): Promise<{ success: boolean; contact?: Contact }> {
+  return daveAPI("contacts/update", {
+    method: "POST",
+    body: { id, ...data },
+  });
+}
+
+export async function updateClientFile(contactId: string, data: Partial<ClientFile>): Promise<{ success: boolean; clientFile?: ClientFile }> {
+  return daveAPI("contacts/update-file", {
+    method: "POST",
+    body: { contactId, ...data },
+  });
+}
+
+export async function getConversations(contactId: string, limit?: number): Promise<{ conversations: Conversation[] }> {
+  return daveAPI("conversations/list", {
+    method: "POST",
+    body: { contactId, limit: limit || 20 },
   });
 }
 
