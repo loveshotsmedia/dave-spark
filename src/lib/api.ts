@@ -267,7 +267,7 @@ export async function createContact(data: Partial<Contact>): Promise<{ success: 
 }
 
 export async function updateContact(id: string, data: Partial<Contact>): Promise<{ success: boolean; contact?: Contact }> {
-  return daveAPI("contacts/update", {
+  return daveAPI("contact/update", {
     method: "POST",
     body: { id, ...data },
   });
