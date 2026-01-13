@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { searchContacts, Contact } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { AddContactModal } from "@/components/dave/AddContactModal";
 
 const STATUS_OPTIONS = ["All", "Prospect", "Active", "Inactive", "VIP", "Whale"];
 const NET_WORTH_RANGES = [
@@ -85,6 +86,7 @@ export default function Contacts() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [sortField, setSortField] = useState<SortField>("full_name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -176,13 +178,22 @@ export default function Contacts() {
                 {filteredContacts.length}
               </Badge>
             </div>
-            <Button onClick={() => navigate("/chat")} variant="outline" size="sm">
+            <Button onClick={() => setShowAddModal(true)} variant="outline" size="sm">
               <Plus className="h-4 w-4 mr-1" />
               Add Contact
             </Button>
           </div>
         </div>
       </header>
+
+      {/* Add Contact Modal */}
+      <AddContactModal
+        open={showAddModal}
+        onOpenChange={setShowAddModal}
+        onContactAdded={(newContact) => {
+          setContacts((prev) => [newContact, ...prev]);
+        }}
+      />
 
       <main className="mx-auto max-w-7xl px-4 py-6">
         {/* Search & Filters */}
