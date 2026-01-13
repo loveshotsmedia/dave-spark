@@ -95,6 +95,14 @@ export default function Contacts() {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
+  // Helper to extract error message from any error type
+  const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    if (error && typeof error === 'object' && 'message' in error) return String((error as { message: unknown }).message);
+    return fallback;
+  };
+
   // Fetch contacts
   useEffect(() => {
     async function fetchContacts() {
@@ -103,7 +111,7 @@ export default function Contacts() {
         const result = await searchContacts(searchQuery);
         setContacts(result.contacts || []);
       } catch (error) {
-        console.error("Failed to fetch contacts:", error);
+        console.error("Failed to fetch contacts:", getErrorMessage(error, "Unknown error"));
       } finally {
         setIsLoading(false);
       }

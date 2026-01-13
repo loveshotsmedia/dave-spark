@@ -148,6 +148,14 @@ export default function KnowledgeBase() {
     loadEntries();
   }, [categoryFilter, sourceTypeFilter]);
 
+  // Helper to extract error message from any error type
+  const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    if (error && typeof error === 'object' && 'message' in error) return String((error as { message: unknown }).message);
+    return fallback;
+  };
+
   const loadEntries = async () => {
     setIsLoading(true);
     try {
@@ -158,7 +166,7 @@ export default function KnowledgeBase() {
       });
       setEntries(result.entries || []);
     } catch (error) {
-      toast.error("Failed to load knowledge entries");
+      toast.error(getErrorMessage(error, "Failed to load knowledge entries"));
     } finally {
       setIsLoading(false);
     }
@@ -175,7 +183,7 @@ export default function KnowledgeBase() {
       const result = await searchKnowledge(searchQuery, 20);
       setSearchResults(result.results || []);
     } catch (error) {
-      toast.error("Search failed");
+      toast.error(getErrorMessage(error, "Search failed"));
     } finally {
       setIsSearching(false);
     }
@@ -206,7 +214,7 @@ export default function KnowledgeBase() {
       loadEntries();
       setActiveTab("library");
     } catch (error) {
-      toast.error("Failed to upload knowledge entry");
+      toast.error(getErrorMessage(error, "Failed to upload knowledge entry"));
     } finally {
       setIsUploading(false);
     }
@@ -236,13 +244,13 @@ export default function KnowledgeBase() {
       const result = await bulkImportKnowledge(entries);
       toast.success(`Imported ${result.success} entries (${result.failed} failed)`);
       if (result.errors.length > 0) {
-        console.error("Import errors:", result.errors);
+        result.errors.forEach(err => toast.error(err));
       }
       setBulkJson("");
       loadEntries();
       setActiveTab("library");
     } catch (error) {
-      toast.error("Failed to import entries");
+      toast.error(getErrorMessage(error, "Failed to import entries"));
     } finally {
       setIsImporting(false);
     }
@@ -255,7 +263,7 @@ export default function KnowledgeBase() {
       toast.success(`Loaded ${result.success} sample entries`);
       loadEntries();
     } catch (error) {
-      toast.error("Failed to load sample content");
+      toast.error(getErrorMessage(error, "Failed to load sample content"));
     } finally {
       setIsImporting(false);
     }
@@ -270,7 +278,7 @@ export default function KnowledgeBase() {
       setDeleteConfirmEntry(null);
       loadEntries();
     } catch (error) {
-      toast.error("Failed to delete entry");
+      toast.error(getErrorMessage(error, "Failed to delete entry"));
     }
   };
 
@@ -294,7 +302,7 @@ export default function KnowledgeBase() {
       setIsViewDialogOpen(false);
       loadEntries();
     } catch (error) {
-      toast.error("Failed to update entry");
+      toast.error(getErrorMessage(error, "Failed to update entry"));
     }
   };
 

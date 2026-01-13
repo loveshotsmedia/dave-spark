@@ -195,13 +195,21 @@ export default function Cases() {
     loadContacts();
   }, []);
 
+  // Helper to extract error message from any error type
+  const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    if (error && typeof error === 'object' && 'message' in error) return String((error as { message: unknown }).message);
+    return fallback;
+  };
+
   const loadCases = async () => {
     setIsLoading(true);
     try {
       const result = await listCases();
       setCases(result.cases || []);
     } catch (error) {
-      toast.error("Failed to load cases");
+      toast.error(getErrorMessage(error, "Failed to load cases"));
     } finally {
       setIsLoading(false);
     }
@@ -225,7 +233,7 @@ export default function Cases() {
       setSelectedCase(caseResult.caseFile);
       setCaseDecisions(decisionsResult.decisions || []);
     } catch (error) {
-      toast.error("Failed to load case details");
+      toast.error(getErrorMessage(error, "Failed to load case details"));
     }
   };
 
@@ -258,7 +266,7 @@ export default function Cases() {
       resetCreateForm();
       loadCases();
     } catch (error) {
-      toast.error("Failed to create case");
+      toast.error(getErrorMessage(error, "Failed to create case"));
     } finally {
       setIsCreating(false);
     }
@@ -307,7 +315,7 @@ export default function Cases() {
       resetDecisionForm();
       await loadCaseDetails(selectedCase.id);
     } catch (error) {
-      toast.error("Failed to record decision");
+      toast.error(getErrorMessage(error, "Failed to record decision"));
     } finally {
       setIsRecording(false);
     }
@@ -338,7 +346,7 @@ export default function Cases() {
         await loadCaseDetails(selectedCase.id);
       }
     } catch (error) {
-      toast.error("Failed to finalize decision");
+      toast.error(getErrorMessage(error, "Failed to finalize decision"));
     }
   };
 
@@ -356,7 +364,7 @@ export default function Cases() {
       setShareUrl(result.shareUrl);
       toast.success("Share link generated");
     } catch (error) {
-      toast.error("Failed to generate share link");
+      toast.error(getErrorMessage(error, "Failed to generate share link"));
     } finally {
       setIsGeneratingShare(false);
     }
