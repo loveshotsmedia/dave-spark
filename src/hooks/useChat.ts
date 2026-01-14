@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { ChatMessage as APIChatMessage, chat, ExtractionProgress } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
-export type LoadingPhase = 'idle' | 'thinking' | 'working' | 'typing';
+export type LoadingPhase = 'idle' | 'thinking' | 'working' | 'streaming';
 
 export interface ChatMessage extends APIChatMessage {
   id: string;
@@ -42,7 +42,7 @@ export function useChat() {
   const loadingMessageIdRef = useRef<string | null>(null);
   const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const workingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const streamedContentRef = useRef<string>('');
 
   // Update working message rotation
   useEffect(() => {
@@ -60,7 +60,7 @@ export function useChat() {
 
   // Update loading message with current phase and working message
   useEffect(() => {
-    if (loadingMessageIdRef.current) {
+    if (loadingMessageIdRef.current && loadingPhase !== 'streaming') {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === loadingMessageIdRef.current
@@ -107,13 +107,14 @@ export function useChat() {
     setLoadingPhase('thinking');
     loadingMessageIdRef.current = loadingMessageId;
     setWorkingMessageIndex(0);
+    streamedContentRef.current = '';
 
     // Clear any existing timeouts
     if (phaseTimeoutRef.current) {
       clearTimeout(phaseTimeoutRef.current);
     }
 
-    // Switch to "working" phase after 2 seconds
+    // Switch to "working" phase after 2 seconds if still waiting
     phaseTimeoutRef.current = setTimeout(() => {
       setLoadingPhase((current) => current === 'thinking' ? 'working' : current);
     }, 2000);
@@ -130,12 +131,48 @@ export function useChat() {
         );
       };
 
+      // Streaming callback - update message in real-time as content arrives
+      const onStream = (chunk: string) => {
+        // Clear phase timeout on first chunk
+        if (phaseTimeoutRef.current) {
+          clearTimeout(phaseTimeoutRef.current);
+          phaseTimeoutRef.current = null;
+        }
+        
+        // Clear working interval
+        if (workingIntervalRef.current) {
+          clearInterval(workingIntervalRef.current);
+          workingIntervalRef.current = null;
+        }
+
+        // Switch to streaming phase
+        setLoadingPhase('streaming');
+
+        // Accumulate content
+        streamedContentRef.current += chunk;
+        
+        // Update message with streamed content
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === loadingMessageId
+              ? { 
+                  ...m, 
+                  loadingPhase: 'streaming',
+                  isLoading: true,
+                  content: streamedContentRef.current,
+                  typedContent: streamedContentRef.current 
+                }
+              : m
+          )
+        );
+      };
+
       // Convert messages to API format (exclude loading messages and welcome)
       const apiMessages: APIChatMessage[] = messages
         .filter(m => !m.isLoading && m.id !== "welcome" && m.content.trim() !== "")
         .map(m => ({ role: m.role, content: m.content }));
 
-      const response = await chat(content, files, onProgress, apiMessages);
+      const response = await chat(content, files, onProgress, apiMessages, onStream);
 
       // Show toast if documents were uploaded to knowledge base
       if (response.documentsUploaded && response.documentsUploaded > 0) {
@@ -144,46 +181,6 @@ export function useChat() {
           description: `${response.documentsUploaded} document${response.documentsUploaded > 1 ? 's' : ''} uploaded. The chat can now reference this content.`,
         });
       }
-
-      // Clear working interval
-      if (workingIntervalRef.current) {
-        clearInterval(workingIntervalRef.current);
-      }
-
-      // Start typing effect
-      setLoadingPhase('typing');
-      const fullContent = response.response;
-      let typedIndex = 0;
-      
-      // Update the loading message to show typing
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === loadingMessageId
-            ? { ...m, loadingPhase: 'typing', content: fullContent, typedContent: '' }
-            : m
-        )
-      );
-
-      // Typing animation
-      await new Promise<void>((resolve) => {
-        typingIntervalRef.current = setInterval(() => {
-          typedIndex += Math.floor(Math.random() * 3) + 2; // 2-4 chars at a time for speed
-          if (typedIndex >= fullContent.length) {
-            typedIndex = fullContent.length;
-            if (typingIntervalRef.current) {
-              clearInterval(typingIntervalRef.current);
-            }
-            resolve();
-          }
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === loadingMessageId
-                ? { ...m, typedContent: fullContent.slice(0, typedIndex) }
-                : m
-            )
-          );
-        }, 15); // Speed of typing
-      });
 
       // Finalize the message
       const assistantMessage: ChatMessage = {
@@ -212,14 +209,12 @@ export function useChat() {
       setIsLoading(false);
       setLoadingPhase('idle');
       loadingMessageIdRef.current = null;
+      streamedContentRef.current = '';
       if (phaseTimeoutRef.current) {
         clearTimeout(phaseTimeoutRef.current);
       }
       if (workingIntervalRef.current) {
         clearInterval(workingIntervalRef.current);
-      }
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current);
       }
     }
   }, [messages]);

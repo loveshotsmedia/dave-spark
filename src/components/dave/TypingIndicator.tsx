@@ -18,8 +18,8 @@ export function TypingIndicator({
   typedContent,
   fullContent
 }: TypingIndicatorProps) {
-  // Show typing effect content
-  if (loadingPhase === 'typing' && typedContent !== undefined) {
+  // Show streaming content (real-time response)
+  if (loadingPhase === 'streaming' && typedContent !== undefined) {
     return (
       <div className="prose prose-sm max-w-none">
         <span>{typedContent}</span>
