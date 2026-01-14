@@ -20,10 +20,54 @@ import {
   Contact, 
   getContact,
   generateTimelineDiagram,
-  type DiagramData 
+  generateSuccessionDiagram,
+  generateIFADiagram,
+  type DiagramData,
+  type ClientFile 
 } from "@/lib/api";
 import { ContactCard } from "./ContactCard";
 import { toast } from "@/hooks/use-toast";
+
+// Helper to detect if client needs succession planning
+function detectSuccessionNeeds(clientFile: ClientFile | null, proposalType: string): boolean {
+  if (!clientFile) return false;
+  
+  // Has children data
+  if (clientFile.children && clientFile.children.length > 0) return true;
+  
+  // Planning needs mention succession
+  if (clientFile.planning_needs?.some(need => 
+    need.toLowerCase().includes('succession') || 
+    need.toLowerCase().includes('estate') ||
+    need.toLowerCase().includes('transfer')
+  )) return true;
+  
+  // Proposal type is succession-related
+  if (['Succession Planning', 'Estate Planning', 'Wealth Transfer'].includes(proposalType)) return true;
+  
+  return false;
+}
+
+// Helper to detect if client needs IFA strategy
+function detectIFANeeds(clientFile: ClientFile | null, proposalType: string): boolean {
+  if (!clientFile) return false;
+  
+  // Planning needs mention IFA or retirement
+  if (clientFile.planning_needs?.some(need => 
+    need.toLowerCase().includes('ifa') || 
+    need.toLowerCase().includes('insured') ||
+    need.toLowerCase().includes('retirement') ||
+    need.toLowerCase().includes('corporate insurance')
+  )) return true;
+  
+  // Has significant business value (potential for corporate insurance strategy)
+  if (clientFile.business_value && clientFile.business_value > 1000000) return true;
+  
+  // Proposal type is IFA-related
+  if (['Retirement Strategy', 'Insurance Review'].includes(proposalType)) return true;
+  
+  return false;
+}
 const PROPOSAL_TYPES = [
   "Succession Planning",
   "Estate Planning",
@@ -105,9 +149,52 @@ export function ProposalPanel({
         additionalContext,
       });
 
-      // Generate implementation timeline diagram
+      // Generate diagrams based on client data
       const diagrams: DiagramData[] = result.diagrams || [];
       
+      // Auto-detect and generate succession diagram if needed
+      if (detectSuccessionNeeds(clientFile, proposalType)) {
+        try {
+          const children = clientFile?.children?.map(child => ({
+            name: child.name,
+            inBusiness: child.in_business,
+            sharePercent: child.in_business ? Math.floor(100 / (clientFile.children?.filter(c => c.in_business).length || 1)) : undefined
+          })) || [];
+          
+          // If no children data, create placeholder based on proposal context
+          const childrenData = children.length > 0 ? children : [
+            { name: 'Child 1', inBusiness: true, sharePercent: 50 },
+            { name: 'Child 2', inBusiness: false }
+          ];
+          
+          const successionDiagram = await generateSuccessionDiagram({
+            parentNames: [fullContact.full_name],
+            children: childrenData,
+            companyName: clientFile?.business_name || fullContact.company || 'Operating Company',
+            freezeValue: clientFile?.business_value
+          });
+          diagrams.push(successionDiagram);
+        } catch (error) {
+          console.error('Failed to generate succession diagram:', error);
+        }
+      }
+      
+      // Auto-detect and generate IFA diagram if needed
+      if (detectIFANeeds(clientFile, proposalType)) {
+        try {
+          const ifaDiagram = await generateIFADiagram({
+            corporationName: clientFile?.business_name || fullContact.company || 'HoldCo',
+            policyValue: clientFile?.business_value ? Math.round(clientFile.business_value * 0.5) : 5000000,
+            annualBorrowing: 200000,
+            years: 20
+          });
+          diagrams.push(ifaDiagram);
+        } catch (error) {
+          console.error('Failed to generate IFA diagram:', error);
+        }
+      }
+
+      // Always generate implementation timeline
       try {
         const timelineDiagram = await generateTimelineDiagram({
           phases: [
