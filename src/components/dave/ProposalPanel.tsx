@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, FileText, Loader2 } from "lucide-react";
+import { Search, FileText, Loader2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SlidePanel } from "./SlidePanel";
-import { searchContacts, generateProposal, uploadContent, Contact, getContact } from "@/lib/api";
+import { DiagramRenderer, type Diagram } from "./DiagramRenderer";
+import { 
+  searchContacts, 
+  generateProposal, 
+  uploadContent, 
+  Contact, 
+  getContact,
+  generateTimelineDiagram,
+  type DiagramData 
+} from "@/lib/api";
 import { ContactCard } from "./ContactCard";
 import { toast } from "@/hooks/use-toast";
 const PROPOSAL_TYPES = [
@@ -28,7 +37,7 @@ interface ProposalPanelProps {
   isOpen: boolean;
   onClose: () => void;
   preselectedContactId?: string;
-  onProposalGenerated: (proposal: string, contactName: string) => void;
+  onProposalGenerated: (proposal: string, contactName: string, diagrams?: DiagramData[]) => void;
 }
 
 export function ProposalPanel({
@@ -96,6 +105,39 @@ export function ProposalPanel({
         additionalContext,
       });
 
+      // Generate implementation timeline diagram
+      const diagrams: DiagramData[] = result.diagrams || [];
+      
+      try {
+        const timelineDiagram = await generateTimelineDiagram({
+          phases: [
+            {
+              name: 'Phase 1 - Structuring & Review',
+              duration: '2 weeks',
+              tasks: ['USA review', 'Tax coordination', 'Legal documentation']
+            },
+            {
+              name: 'Phase 2 - Insurance & Underwriting',
+              duration: '6 weeks',
+              tasks: ['Medical examinations', 'Policy placement', 'Coverage approval']
+            },
+            {
+              name: 'Phase 3 - Implementation',
+              duration: '4 weeks',
+              tasks: ['Corporate restructuring', 'Share exchange', 'Policy funding']
+            },
+            {
+              name: 'Phase 4 - Ongoing Management',
+              duration: 'Annual',
+              tasks: ['Annual valuation review', 'Tax planning updates', 'Beneficiary review']
+            }
+          ]
+        });
+        diagrams.push(timelineDiagram);
+      } catch (error) {
+        console.error('Failed to generate timeline diagram:', error);
+      }
+
       // Save proposal to content library for future reference
       await uploadContent({
         title: `${proposalType} Proposal - ${selectedContact.full_name}`,
@@ -112,7 +154,7 @@ export function ProposalPanel({
         description: `Proposal saved to Content Library for ${selectedContact.full_name}`,
       });
 
-      onProposalGenerated(result.proposal, selectedContact.full_name);
+      onProposalGenerated(result.proposal, selectedContact.full_name, diagrams);
       onClose();
       resetForm();
     } catch (error) {

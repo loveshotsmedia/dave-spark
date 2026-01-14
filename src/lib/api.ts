@@ -533,10 +533,19 @@ export interface ProposalRequest {
   emailTo?: string;
 }
 
+export interface DiagramData {
+  type: string;
+  format: 'mermaid' | 'html' | 'chartjs' | 'svg';
+  content: string;
+  title?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface ProposalResult {
   proposal: string;
   calculations?: unknown;
   gaarAnalysis?: GAARAnalysisResult;
+  diagrams?: DiagramData[];
   emailSent?: boolean;
   emailId?: string;
 }
@@ -1246,4 +1255,62 @@ export interface OnboardingData {
 
 export async function completeOnboarding(data: OnboardingData): Promise<{ success: boolean }> {
   return daveAPI("auth/onboarding", { method: "POST", body: { ...data, completed: true } });
+}
+
+// ========== DIAGRAM GENERATION ==========
+export interface SuccessionDiagramRequest {
+  parentNames: string[];
+  children: Array<{ name: string; inBusiness: boolean; sharePercent?: number }>;
+  companyName: string;
+  freezeValue?: number;
+}
+
+export interface IFADiagramRequest {
+  corporationName: string;
+  policyValue: number;
+  annualBorrowing?: number;
+  years?: number;
+}
+
+export interface TimelineDiagramRequest {
+  phases: Array<{
+    name: string;
+    duration: string;
+    tasks: string[];
+  }>;
+}
+
+export async function generateSuccessionDiagram(data: SuccessionDiagramRequest): Promise<DiagramData> {
+  return daveAPI<DiagramData>("diagram/succession", {
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function generateIFADiagram(data: IFADiagramRequest): Promise<DiagramData> {
+  return daveAPI<DiagramData>("diagram/ifa", {
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function generateTimelineDiagram(data: TimelineDiagramRequest): Promise<DiagramData> {
+  return daveAPI<DiagramData>("diagram/timeline", {
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function generateBalanceSheetDiagram(data: Record<string, unknown>): Promise<DiagramData> {
+  return daveAPI<DiagramData>("diagram/balance-sheet", {
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function generateComparisonDiagram(data: Record<string, unknown>): Promise<DiagramData> {
+  return daveAPI<DiagramData>("diagram/comparison", {
+    method: "POST",
+    body: data,
+  });
 }

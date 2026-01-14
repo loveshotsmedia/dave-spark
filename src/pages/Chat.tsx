@@ -19,8 +19,9 @@ import { EmailComposer } from "@/components/dave/EmailComposer";
 import { PreCallModal } from "@/components/dave/PreCallModal";
 import { DocumentCallModal } from "@/components/dave/DocumentCallModal";
 import { VoiceCallPanel } from "@/components/dave/VoiceCallPanel";
-import { Contact } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { DiagramRenderer } from "@/components/dave/DiagramRenderer";
+import { Contact, type DiagramData } from "@/lib/api";
+import { Loader2, BarChart3 } from "lucide-react";
 
 export default function Chat() {
   const { isAuthenticated, isLoading: authLoading, onboardingComplete, signOut } = useAuth();
@@ -48,6 +49,9 @@ export default function Chat() {
 
   // Selected contact for proposal
   const [selectedContactId, setSelectedContactId] = useState<string | undefined>();
+  
+  // Generated diagrams for display
+  const [proposalDiagrams, setProposalDiagrams] = useState<DiagramData[]>([]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -85,8 +89,11 @@ export default function Chat() {
     setIsProposalOpen(true);
   };
 
-  const handleProposalGenerated = (proposal: string, contactName: string) => {
+  const handleProposalGenerated = (proposal: string, contactName: string, diagrams?: DiagramData[]) => {
     sendMessage(`Generated proposal for ${contactName}:\n\n${proposal}`, undefined);
+    if (diagrams && diagrams.length > 0) {
+      setProposalDiagrams(diagrams);
+    }
   };
 
   const handleContactSelect = (contact: Contact) => {
@@ -119,6 +126,26 @@ export default function Chat() {
               onGenerateProposal={handleGenerateProposal}
             />
           ))}
+          
+          {/* Proposal Diagrams Section */}
+          {proposalDiagrams.length > 0 && (
+            <div className="space-y-4 pt-4 border-t border-border">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <BarChart3 className="h-4 w-4" />
+                <span>Visual Illustrations</span>
+                <button 
+                  onClick={() => setProposalDiagrams([])}
+                  className="ml-auto text-xs hover:text-foreground"
+                >
+                  Clear diagrams
+                </button>
+              </div>
+              {proposalDiagrams.map((diagram, index) => (
+                <DiagramRenderer key={index} diagram={diagram} />
+              ))}
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
       </main>
