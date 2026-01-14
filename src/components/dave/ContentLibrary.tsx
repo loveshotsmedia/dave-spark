@@ -92,6 +92,10 @@ export function ContentLibrary({ isOpen, onClose }: ContentLibraryProps) {
   // Send SMS modal state
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+
+  // Preview modal state
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState<ContentItem | null>(null);
   const [contactSearch, setContactSearch] = useState("");
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -217,6 +221,11 @@ export function ContentLibrary({ isOpen, onClose }: ContentLibraryProps) {
     setSendModalOpen(true);
   };
 
+  const openPreview = (item: ContentItem) => {
+    setPreviewContent(item);
+    setPreviewModalOpen(true);
+  };
+
   const handleSendSMS = async () => {
     if (!selectedContent || !selectedContact) return;
 
@@ -308,7 +317,8 @@ export function ContentLibrary({ isOpen, onClose }: ContentLibraryProps) {
               {filteredContent.map((item) => (
                 <div
                   key={item.id}
-                  className="group rounded-xl border border-border bg-card p-4 transition-all hover:shadow-md"
+                  className="group rounded-xl border border-border bg-card p-4 transition-all hover:shadow-md cursor-pointer"
+                  onClick={() => openPreview(item)}
                 >
                   <div className="flex items-start gap-3">
                     {/* Type Icon */}
@@ -351,7 +361,10 @@ export function ContentLibrary({ isOpen, onClose }: ContentLibraryProps) {
                           size="icon"
                           variant="ghost"
                           className="h-8 w-8"
-                          onClick={() => window.open(item.url, "_blank")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(item.url, "_blank");
+                          }}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
@@ -360,7 +373,10 @@ export function ContentLibrary({ isOpen, onClose }: ContentLibraryProps) {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-primary"
-                        onClick={() => openSendModal(item)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openSendModal(item);
+                        }}
                       >
                         <Send className="h-4 w-4" />
                       </Button>
@@ -368,7 +384,10 @@ export function ContentLibrary({ isOpen, onClose }: ContentLibraryProps) {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-destructive"
-                        onClick={() => handleDelete(item)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item);
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -637,6 +656,191 @@ export function ContentLibrary({ isOpen, onClose }: ContentLibraryProps) {
                 </>
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Modal */}
+      <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {previewContent && (
+                <div
+                  className={`rounded-lg p-2 ${CONTENT_TYPE_COLORS[previewContent.content_type] || "bg-muted text-muted-foreground"}`}
+                >
+                  {CONTENT_TYPE_ICONS[previewContent.content_type] || <File className="h-5 w-5" />}
+                </div>
+              )}
+              {previewContent?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {previewContent?.description || "No description available"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Metadata */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="capitalize">
+                {previewContent?.content_type}
+              </Badge>
+              {previewContent?.audience && (
+                <Badge variant="secondary" className="capitalize">
+                  {previewContent.audience}
+                </Badge>
+              )}
+              {previewContent?.tags?.map((tag) => (
+                <Badge key={tag} variant="default">
+                  <Tag className="h-3 w-3 mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+
+            {/* URL Preview */}
+            {previewContent?.url && (
+              <div className="space-y-2">
+                <Label>External Link</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={previewContent.url}
+                    readOnly
+                    className="flex-1 font-mono text-sm"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => window.open(previewContent.url, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Embed preview for videos */}
+                {previewContent.content_type === "video" && (
+                  <div className="aspect-video rounded-lg overflow-hidden bg-muted mt-4">
+                    {(() => {
+                      // Extract YouTube video ID
+                      if (previewContent.url.includes("youtube.com") || previewContent.url.includes("youtu.be")) {
+                        let videoId = "";
+                        try {
+                          if (previewContent.url.includes("youtu.be/")) {
+                            videoId = previewContent.url.split("youtu.be/")[1].split(/[?&]/)[0];
+                          } else if (previewContent.url.includes("youtube.com/watch")) {
+                            const urlObj = new URL(previewContent.url);
+                            videoId = urlObj.searchParams.get("v") || "";
+                          } else if (previewContent.url.includes("youtube.com/embed/")) {
+                            videoId = previewContent.url.split("youtube.com/embed/")[1].split(/[?&]/)[0];
+                          }
+                        } catch (e) {
+                          console.error("Failed to parse YouTube URL:", e);
+                        }
+
+                        if (videoId) {
+                          return (
+                            <iframe
+                              src={`https://www.youtube.com/embed/${videoId}`}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          );
+                        }
+                      } else if (previewContent.url.includes("vimeo.com")) {
+                        let videoId = "";
+                        try {
+                          videoId = previewContent.url.split("vimeo.com/")[1].split(/[?&]/)[0];
+                        } catch (e) {
+                          console.error("Failed to parse Vimeo URL:", e);
+                        }
+
+                        if (videoId) {
+                          return (
+                            <iframe
+                              src={`https://player.vimeo.com/video/${videoId}`}
+                              className="w-full h-full"
+                              allow="autoplay; fullscreen; picture-in-picture"
+                              allowFullScreen
+                            />
+                          );
+                        }
+                      }
+
+                      // Fallback for unsupported video platforms
+                      return (
+                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
+                          <Video className="h-12 w-12" />
+                          <p className="text-sm">Video preview not available</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(previewContent.url, "_blank")}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Open in New Tab
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* File Path Preview */}
+            {previewContent?.file_path && (
+              <div className="space-y-2">
+                <Label>File Location</Label>
+                <Input
+                  value={previewContent.file_path}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+              </div>
+            )}
+
+            {/* Additional Metadata */}
+            <div className="pt-4 border-t">
+              <div>
+                <Label className="text-xs text-muted-foreground">Created</Label>
+                <p className="text-sm">
+                  {previewContent?.created_at
+                    ? new Date(previewContent.created_at).toLocaleDateString()
+                    : "Unknown"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewModalOpen(false)}>
+              Close
+            </Button>
+            {previewContent && (
+              <>
+                <Button
+                  variant="default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewModalOpen(false);
+                    openSendModal(previewContent);
+                  }}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Send to Client
+                </Button>
+                {previewContent.url && (
+                  <Button
+                    variant="default"
+                    onClick={() => window.open(previewContent.url, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open Link
+                  </Button>
+                )}
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
