@@ -102,7 +102,8 @@ export interface ChatResponse {
 export async function chat(
   message: string,
   files?: File[],
-  onProgress?: (progress: ExtractionProgress) => void
+  onProgress?: (progress: ExtractionProgress) => void,
+  conversationHistory?: ChatMessage[]
 ): Promise<{ response: string; context?: string; thinking?: string; documentsUploaded?: number }> {
   let documentsUploaded = 0;
   const processedFiles: ChatFile[] = [];
@@ -166,11 +167,26 @@ export async function chat(
     });
   }
 
-  const messages: ChatMessage[] = [{ role: "user", content: message }];
-  
+  // Build message history with conversation context
+  let messages: ChatMessage[];
+
+  if (conversationHistory && conversationHistory.length > 0) {
+    // Use full conversation history (excluding welcome message and loading messages)
+    messages = [
+      ...conversationHistory.filter(m => 
+        !m.content.includes("Good morning") && 
+        m.content.trim() !== ""
+      ),
+      { role: "user", content: message }
+    ];
+  } else {
+    // Fallback to single message if no history
+    messages = [{ role: "user", content: message }];
+  }
+
   if (documentsUploaded > 0) {
     const fileNames = files!.filter(f => f.type === 'application/pdf').map(f => f.name).join(', ');
-    messages[0].content = `I just uploaded "${fileNames}". ${message}`;
+    messages[messages.length - 1].content = `I just uploaded "${fileNames}". ${message}`;
   }
 
   const response = await daveAPI<ChatResponse>("chat", {

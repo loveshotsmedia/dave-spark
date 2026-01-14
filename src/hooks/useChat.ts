@@ -130,7 +130,12 @@ export function useChat() {
         );
       };
 
-      const response = await chat(content, files, onProgress);
+      // Convert messages to API format (exclude loading messages and welcome)
+      const apiMessages: APIChatMessage[] = messages
+        .filter(m => !m.isLoading && m.id !== "welcome" && m.content.trim() !== "")
+        .map(m => ({ role: m.role, content: m.content }));
+
+      const response = await chat(content, files, onProgress, apiMessages);
 
       // Show toast if documents were uploaded to knowledge base
       if (response.documentsUploaded && response.documentsUploaded > 0) {
