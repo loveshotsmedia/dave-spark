@@ -103,7 +103,8 @@ export async function chat(
   message: string,
   files?: File[],
   onProgress?: (progress: ExtractionProgress) => void,
-  conversationHistory?: ChatMessage[]
+  conversationHistory?: ChatMessage[],
+  onStream?: (chunk: string) => void
 ): Promise<{ response: string; context?: string; thinking?: string; documentsUploaded?: number }> {
   let documentsUploaded = 0;
   const processedFiles: ChatFile[] = [];
@@ -189,6 +190,80 @@ export async function chat(
     messages[messages.length - 1].content = `I just uploaded "${fileNames}". ${message}`;
   }
 
+  // If streaming callback provided, use streaming endpoint
+  if (onStream) {
+    const response = await fetch(`${DAVE_API_URL}/chat/stream`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: DAVE_API_ANON_KEY,
+        Authorization: `Bearer ${DAVE_API_ANON_KEY}`,
+        "x-owner-auth": AUTH_HEADER,
+      },
+      body: JSON.stringify({
+        messages,
+        files: processedFiles.length > 0 ? processedFiles : undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      // Fallback to non-streaming if stream endpoint fails
+      const fallbackResponse = await daveAPI<ChatResponse>("chat", {
+        method: "POST",
+        body: {
+          messages,
+          files: processedFiles.length > 0 ? processedFiles : undefined,
+        },
+      });
+      return { ...fallbackResponse, documentsUploaded };
+    }
+
+    // Read the stream
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+
+    if (reader) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          
+          // Parse SSE format: "data: {...}\n\n"
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.content) {
+                  fullResponse += parsed.content;
+                  onStream(parsed.content);
+                }
+              } catch {
+                // If not JSON, treat as raw text chunk
+                fullResponse += data;
+                onStream(data);
+              }
+            } else if (line.trim() && !line.startsWith(':')) {
+              // Raw text (non-SSE format)
+              fullResponse += line;
+              onStream(line);
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    }
+
+    return { response: fullResponse, documentsUploaded };
+  }
+
+  // Non-streaming fallback
   const response = await daveAPI<ChatResponse>("chat", {
     method: "POST",
     body: {
