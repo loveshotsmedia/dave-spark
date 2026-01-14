@@ -222,7 +222,7 @@ export function useChat() {
         clearInterval(typingIntervalRef.current);
       }
     }
-  }, []);
+  }, [messages]);
 
   const clearMessages = useCallback(() => {
     setMessages([
