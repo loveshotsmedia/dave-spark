@@ -208,6 +208,12 @@ export interface Contact {
   notes?: string;
   created_at?: string;
   updated_at?: string;
+  // Booking fields
+  booking_status?: 'not_sent' | 'link_sent' | 'booked' | 'completed' | 'cancelled';
+  booking_link_sent_at?: string;
+  booking_scheduled_at?: string;
+  booking_completed_at?: string;
+  booking_notes?: string;
 }
 
 export async function searchContacts(query: string): Promise<{ contacts: Contact[] }> {
@@ -1313,4 +1319,31 @@ export async function generateComparisonDiagram(data: Record<string, unknown>): 
     method: "POST",
     body: data,
   });
+}
+
+// ========== CALENDLY BOOKING ==========
+export async function sendBookingLink(contactId: string, customMessage?: string): Promise<{ success: boolean; message?: string }> {
+  return daveAPI("booking/send-link", {
+    method: "POST",
+    body: { contactId, message: customMessage },
+  });
+}
+
+export async function updateBookingStatus(
+  contactId: string,
+  status: 'not_sent' | 'link_sent' | 'booked' | 'completed' | 'cancelled',
+  notes?: string
+): Promise<{ success: boolean }> {
+  return daveAPI("booking/update-status", {
+    method: "POST",
+    body: { contactId, status, notes },
+  });
+}
+
+export async function getBookingLink(): Promise<string> {
+  const data = await daveAPI<{ bookingLink?: string }>("booking/get-link", {
+    method: "POST",
+    body: {},
+  });
+  return data.bookingLink || 'https://calendly.com/dave-wfsadvisory/discovery-meeting';
 }

@@ -18,17 +18,28 @@ import {
   User,
   Clock,
   ArrowRight,
+  CalendarPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   getContact,
   getAppointments,
   getTasks,
   getConversations,
   initiateCall,
+  sendBookingLink,
+  updateBookingStatus,
   Contact,
   ClientFile,
   Appointment,
@@ -42,6 +53,7 @@ import { EditContactModal } from "@/components/dave/EditContactModal";
 import { SendContentModal } from "@/components/dave/SendContentModal";
 import { ProposalPanel } from "@/components/dave/ProposalPanel";
 import { CampaignEnrollmentCard } from "@/components/dave/CampaignEnrollmentCard";
+import { BookingStatusBadge } from "@/components/dave/BookingStatusBadge";
 import { toast } from "@/hooks/use-toast";
 
 function formatNetWorth(value?: number): string {
@@ -121,6 +133,7 @@ export default function ContactProfile() {
   const [isSendContentOpen, setIsSendContentOpen] = useState(false);
   const [isProposalOpen, setIsProposalOpen] = useState(false);
   const [isCallingContact, setIsCallingContact] = useState(false);
+  const [isSendingBooking, setIsSendingBooking] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -212,6 +225,51 @@ export default function ContactProfile() {
       });
     } finally {
       setIsCallingContact(false);
+    }
+  };
+
+  const handleSendBookingLink = async () => {
+    if (!contact) return;
+
+    setIsSendingBooking(true);
+    try {
+      await sendBookingLink(contact.id);
+      toast({
+        title: "Booking link sent",
+        description: `Discovery meeting link sent to ${contact.full_name}`,
+      });
+      // Refresh contact data to show updated status
+      const contactRes = await getContact(contact.id);
+      setContact(contactRes.contact);
+    } catch (error) {
+      toast({
+        title: "Failed to send",
+        description: "Could not send booking link",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingBooking(false);
+    }
+  };
+
+  const handleUpdateBookingStatus = async (status: 'not_sent' | 'link_sent' | 'booked' | 'completed' | 'cancelled') => {
+    if (!contact) return;
+
+    try {
+      await updateBookingStatus(contact.id, status);
+      toast({
+        title: "Status updated",
+        description: `Booking status changed to ${status.replace('_', ' ')}`,
+      });
+      // Refresh contact data
+      const contactRes = await getContact(contact.id);
+      setContact(contactRes.contact);
+    } catch (error) {
+      toast({
+        title: "Failed to update",
+        description: "Could not update booking status",
+        variant: "destructive",
+      });
     }
   };
 
@@ -412,6 +470,79 @@ export default function ContactProfile() {
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground">No file data yet</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Booking Status & Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Booking Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <BookingStatusBadge status={contact.booking_status} />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          Update Status
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Booking Status</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleUpdateBookingStatus('not_sent')}>
+                          Not Sent
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleUpdateBookingStatus('link_sent')}>
+                          Link Sent
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleUpdateBookingStatus('booked')}>
+                          Meeting Booked
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleUpdateBookingStatus('completed')}>
+                          Completed
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleUpdateBookingStatus('cancelled')}>
+                          Cancelled
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {contact.booking_status !== 'booked' && contact.booking_status !== 'completed' && (
+                    <Button
+                      className="w-full"
+                      onClick={handleSendBookingLink}
+                      disabled={isSendingBooking || !contact?.phone}
+                    >
+                      {isSendingBooking ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <CalendarPlus className="h-4 w-4 mr-2" />
+                          Send Booking Link
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  {contact.booking_link_sent_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Link sent: {new Date(contact.booking_link_sent_at).toLocaleDateString()}
+                    </p>
+                  )}
+
+                  {contact.booking_scheduled_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Meeting scheduled: {new Date(contact.booking_scheduled_at).toLocaleDateString()}
+                    </p>
                   )}
                 </CardContent>
               </Card>
