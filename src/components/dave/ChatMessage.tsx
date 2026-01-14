@@ -69,8 +69,31 @@ export function ChatMessage({ message, onGenerateProposal }: ChatMessageProps) {
               fullContent={message.content}
             />
           ) : (
-            <div className={`prose prose-sm max-w-none ${isUser ? "prose-invert" : ""}`}>
-              <ReactMarkdown>{cleanContent}</ReactMarkdown>
+            <div
+              className={`prose max-w-none ${isUser ? "prose-invert" : "dark:prose-invert"}`}
+              style={{
+                lineHeight: '1.7',
+              }}
+            >
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p className="mb-4 leading-relaxed">{children}</p>,
+                  h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 mt-6">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-5">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-lg font-semibold mb-3 mt-4">{children}</h3>,
+                  ul: ({ children }) => <ul className="mb-4 ml-4 space-y-2">{children}</ul>,
+                  ol: ({ children }) => <ol className="mb-4 ml-4 space-y-2">{children}</ol>,
+                  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                  blockquote: ({ children }) => <blockquote className="border-l-4 border-primary pl-4 my-4 italic">{children}</blockquote>,
+                  code: ({ children, inline }: any) =>
+                    inline
+                      ? <code className="bg-muted px-1.5 py-0.5 rounded text-sm">{children}</code>
+                      : <code className="block bg-muted p-4 rounded my-4 overflow-x-auto">{children}</code>,
+                  hr: () => <hr className="my-6 border-border" />,
+                }}
+              >
+                {cleanContent}
+              </ReactMarkdown>
             </div>
           )}
         </div>
