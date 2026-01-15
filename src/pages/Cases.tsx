@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { PageTransition } from "@/components/effects/PageTransition";
 import { Header } from "@/components/dave/Header";
 import {
   listCases,
@@ -410,7 +411,7 @@ export default function Cases() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-black">
+    <PageTransition className="flex h-screen flex-col bg-black">
       <Header onLogout={handleLogout} onSettingsClick={() => {}} />
 
       <main className="flex-1 overflow-y-auto scrollbar-thin">
@@ -1194,6 +1195,6 @@ export default function Cases() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageTransition>
   );
 }

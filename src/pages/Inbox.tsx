@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { PageTransition } from "@/components/effects/PageTransition";
 import { Header } from "@/components/dave/Header";
 import { listEmails, syncEmails, markEmailRead, starEmail, archiveEmail, Email } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -144,7 +145,7 @@ export default function Inbox() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <PageTransition className="flex min-h-screen flex-col bg-background">
       <Header onLogout={handleLogout} onSettingsClick={() => setShowSettings(true)} />
 
       <div className="flex flex-1 overflow-hidden">
@@ -337,6 +338,6 @@ export default function Inbox() {
           )}
         </div>
       </div>
-    </div>
+    </PageTransition>
   );
 }

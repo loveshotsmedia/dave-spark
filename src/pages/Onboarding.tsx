@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, User, Building, Briefcase } from "lucide-react";
+import { PageTransition } from "@/components/effects/PageTransition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,7 +64,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <PageTransition className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center space-y-4">
@@ -191,6 +192,6 @@ export default function Onboarding() {
           )}
         </div>
       </div>
-    </div>
+    </PageTransition>
   );
 }

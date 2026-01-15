@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { PageTransition } from "@/components/effects/PageTransition";
 import {
   Mail,
   MessageSquare,
@@ -112,7 +113,7 @@ export default function Campaigns() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageTransition className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur-sm">
         <div className="mx-auto max-w-6xl px-4 py-4">
@@ -355,7 +356,6 @@ export default function Campaigns() {
           </Card>
         )}
       </main>
-
-    </div>
+    </PageTransition>
   );
 }

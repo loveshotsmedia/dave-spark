@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { PageTransition } from "@/components/effects/PageTransition";
 import {
   Search,
   Upload,
@@ -434,7 +435,7 @@ export default function ContentLibraryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageTransition className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
@@ -1338,6 +1339,6 @@ export default function ContentLibraryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageTransition>
   );
 }
