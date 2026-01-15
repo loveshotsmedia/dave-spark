@@ -152,10 +152,40 @@ export function ChatMessage({ message, onGenerateProposal }: ChatMessageProps) {
                     ol: ({ children }) => <ol className="mb-4 ml-4 space-y-2">{children}</ol>,
                     li: ({ children }) => <li className="leading-relaxed">{children}</li>,
                     blockquote: ({ children }) => <blockquote className="border-l-4 border-primary pl-4 my-4 italic">{children}</blockquote>,
-                    code: ({ children, inline }: any) =>
-                      inline
-                        ? <code className="bg-muted px-1.5 py-0.5 rounded text-sm">{children}</code>
-                        : <code className="block bg-muted p-4 rounded my-4 overflow-x-auto">{children}</code>,
+                    code({ node, inline, className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const language = match ? match[1] : '';
+                      const codeContent = String(children).replace(/\n$/, '');
+
+                      // Render Mermaid diagrams
+                      if (language === 'mermaid' && !inline) {
+                        return (
+                          <div className="my-4">
+                            <DiagramRenderer 
+                              diagram={{
+                                type: 'mermaid',
+                                format: 'mermaid',
+                                content: codeContent
+                              }}
+                            />
+                          </div>
+                        );
+                      }
+
+                      // Regular code blocks
+                      if (!inline && match) {
+                        return (
+                          <pre className="bg-muted p-4 rounded-md overflow-x-auto my-4">
+                            <code className={className} {...props}>
+                              {children}
+                            </code>
+                          </pre>
+                        );
+                      }
+
+                      // Inline code
+                      return <code className="bg-muted px-1.5 py-0.5 rounded text-sm" {...props}>{children}</code>;
+                    },
                     hr: () => <hr className="my-6 border-border" />,
                     table: ({ children }) => (
                       <div className="my-4 overflow-x-auto rounded-lg border border-border">
