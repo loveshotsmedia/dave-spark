@@ -67,15 +67,16 @@ import { format } from "date-fns";
 
 // Supabase storage URL for the external backend
 const SUPABASE_URL = "https://icopqfohbrdsdqgpajdy.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljb3BxZm9oYnJkc2RxZ3BhamR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2NTcxNzAsImV4cCI6MjA1MzIzMzE3MH0.2SjkOJF5_1TkKBBJ3cWToMB1LhPHVOMfjBuQigRlDKE";
 
-// Helper to get public URL for stored files
-function getStorageUrl(filePath: string): string {
-  if (!filePath) return "";
+// Construct proper Supabase Storage public URL
+function getStorageUrl(storagePath: string): string {
+  if (!storagePath) return "";
   // If it's already a full URL, return as-is
-  if (filePath.startsWith("http")) return filePath;
-  // Build the public storage URL
-  return `${SUPABASE_URL}/storage/v1/object/public/${filePath}`;
+  if (storagePath.startsWith("http")) return storagePath;
+  // Remove 'content/' or 'content-files/' prefix if present to avoid duplication
+  const cleanPath = storagePath.replace(/^(content-files\/|content\/)/, "");
+  // Build the public storage URL for content-files bucket
+  return `${SUPABASE_URL}/storage/v1/object/public/content-files/content/${cleanPath}`;
 }
 
 const CONTENT_TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -1242,7 +1243,7 @@ export default function ContentLibraryPage() {
               </div>
             )}
 
-            {/* Document Preview (PDFs, etc.) */}
+            {/* Document Preview (PDFs, Images, etc.) */}
             {previewContent?.file_path && (
               <div className="space-y-3">
                 <Label>Document Preview</Label>
@@ -1253,10 +1254,10 @@ export default function ContentLibraryPage() {
                   // PDF embed
                   if (ext === 'pdf') {
                     return (
-                      <div className="rounded-lg overflow-hidden border bg-muted">
+                      <div className="rounded-sm overflow-hidden border border-zinc-800 bg-zinc-950">
                         <iframe
                           src={`${fileUrl}#toolbar=1&navpanes=0`}
-                          className="w-full h-[500px]"
+                          className="w-full h-[600px]"
                           title={previewContent.title}
                         />
                       </div>
@@ -1266,7 +1267,7 @@ export default function ContentLibraryPage() {
                   // Image preview
                   if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
                     return (
-                      <div className="rounded-lg overflow-hidden border bg-muted p-4">
+                      <div className="rounded-sm overflow-hidden border border-zinc-800 bg-zinc-950 p-4">
                         <img
                           src={fileUrl}
                           alt={previewContent.title}
@@ -1278,13 +1279,14 @@ export default function ContentLibraryPage() {
                   
                   // Fallback for other file types
                   return (
-                    <div className="rounded-lg border bg-muted/50 p-6 text-center">
-                      <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mb-3">
+                    <div className="rounded-sm border border-zinc-800 bg-zinc-950/50 p-6 text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-3 text-zinc-500" />
+                      <p className="text-sm text-zinc-400 mb-3">
                         Preview not available for this file type
                       </p>
                       <Button
                         variant="outline"
+                        className="rounded-sm"
                         onClick={() => window.open(fileUrl, "_blank")}
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
