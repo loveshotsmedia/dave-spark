@@ -27,6 +27,30 @@ const WORKING_MESSAGES = [
   "Almost there..."
 ];
 
+// Strip any working message artifacts from the final response
+function cleanWorkingMessageArtifacts(response: string): string {
+  let cleaned = response;
+  
+  // Remove any working messages that might have been prepended
+  for (const msg of WORKING_MESSAGES) {
+    // Remove exact matches at the start (with or without trailing whitespace/newlines)
+    const patterns = [
+      new RegExp(`^${escapeRegex(msg)}\\s*`, 'i'),
+      new RegExp(`^${escapeRegex(msg.replace('...', ''))}\\.\\.\\.*\\s*`, 'i'),
+    ];
+    for (const pattern of patterns) {
+      cleaned = cleaned.replace(pattern, '');
+    }
+  }
+  
+  return cleaned.trim();
+}
+
+// Helper to escape special regex characters
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -151,6 +175,9 @@ export function useChat() {
         // Accumulate content
         streamedContentRef.current += chunk;
         
+        // Clean any working message artifacts from streamed content in real-time
+        const cleanedContent = cleanWorkingMessageArtifacts(streamedContentRef.current);
+        
         // Update message with streamed content - clear workingMessage to prevent artifacts
         setMessages((prev) =>
           prev.map((m) =>
@@ -160,8 +187,8 @@ export function useChat() {
                   loadingPhase: 'streaming',
                   isLoading: true,
                   workingMessage: undefined,
-                  content: streamedContentRef.current,
-                  typedContent: streamedContentRef.current 
+                  content: cleanedContent,
+                  typedContent: cleanedContent 
                 }
               : m
           )
@@ -183,11 +210,14 @@ export function useChat() {
         });
       }
 
+      // Clean the response of any working message artifacts
+      const cleanedResponse = cleanWorkingMessageArtifacts(response.response);
+
       // Finalize the message
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: response.response,
+        content: cleanedResponse,
         timestamp: new Date(),
       };
 
