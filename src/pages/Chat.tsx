@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { PageTransition } from "@/components/effects/PageTransition";
-import { useChat } from "@/hooks/useChat";
+import { useChat, SavedConversation } from "@/hooks/useChat";
 import { Header } from "@/components/dave/Header";
 import { ChatMessage } from "@/components/dave/ChatMessage";
 import { ChatInput } from "@/components/dave/ChatInput";
@@ -21,15 +21,31 @@ import { PreCallModal } from "@/components/dave/PreCallModal";
 import { DocumentCallModal } from "@/components/dave/DocumentCallModal";
 import { VoiceCallPanel } from "@/components/dave/VoiceCallPanel";
 import { DiagramRenderer } from "@/components/dave/DiagramRenderer";
+import { ConversationSidebar } from "@/components/dave/ConversationSidebar";
 import { Contact, type DiagramData } from "@/lib/api";
-import { Loader2, BarChart3 } from "lucide-react";
+import { Loader2, BarChart3, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Chat() {
   const { isAuthenticated, isLoading: authLoading, onboardingComplete, signOut } = useAuth();
-  const { messages, isLoading, sendMessage } = useChat();
+  const { 
+    messages, 
+    isLoading, 
+    sendMessage, 
+    conversationId, 
+    loadConversation, 
+    startNewConversation, 
+    getSavedConversations 
+  } = useChat();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+
+  // Conversation sidebar state
+  const [showConversations, setShowConversations] = useState(!isMobile);
+  const [savedConversations, setSavedConversations] = useState<SavedConversation[]>([]);
 
   // Panel states
   const [isProposalOpen, setIsProposalOpen] = useState(false);
@@ -52,7 +68,17 @@ export default function Chat() {
   const [selectedContactId, setSelectedContactId] = useState<string | undefined>();
   
   // Generated diagrams for display
-  const [proposalDiagrams, setProposalDiagrams] = useState<DiagramData[]>([]);
+  const [proposalDiagrams, setProposalDiagrams] = useState<DiagramData[]>();
+
+  // Load conversations on mount and when messages change
+  useEffect(() => {
+    setSavedConversations(getSavedConversations());
+  }, [getSavedConversations]);
+
+  // Refresh conversations when messages change
+  useEffect(() => {
+    setSavedConversations(getSavedConversations());
+  }, [messages, getSavedConversations]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -107,6 +133,18 @@ export default function Chat() {
     sendMessage(action);
   };
 
+  const handleDeleteConversation = (id: string) => {
+    const saved = JSON.parse(localStorage.getItem('dave-conversations') || '[]');
+    const filtered = saved.filter((c: SavedConversation) => c.id !== id);
+    localStorage.setItem('dave-conversations', JSON.stringify(filtered));
+    setSavedConversations(filtered);
+
+    // If deleting current conversation, start new one
+    if (id === conversationId) {
+      startNewConversation();
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -119,42 +157,78 @@ export default function Chat() {
     <PageTransition className="flex h-screen flex-col bg-black">
       <Header onLogout={handleLogout} onSettingsClick={() => setIsSettingsOpen(true)} />
 
-      {/* Messages Area */}
-      <main className="flex-1 overflow-y-auto scrollbar-thin">
-        <div className="mx-auto max-w-3xl px-4 py-4 space-y-4">
-          {messages.map((message) => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              onGenerateProposal={handleGenerateProposal}
-            />
-          ))}
-          
-          {/* Proposal Diagrams Section */}
-          {proposalDiagrams.length > 0 && (
-            <div className="space-y-3 pt-3 border-t border-zinc-800">
-              <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono uppercase tracking-wider">
-                <BarChart3 className="h-3.5 w-3.5" strokeWidth={1.5} />
-                <span>Diagrams</span>
-                <button 
-                  onClick={() => setProposalDiagrams([])}
-                  className="ml-auto text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-200"
-                >
-                  Clear
-                </button>
-              </div>
-              {proposalDiagrams.map((diagram, index) => (
-                <DiagramRenderer key={index} diagram={diagram} />
-              ))}
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Conversation Sidebar - Desktop */}
+        {showConversations && !isMobile && (
+          <ConversationSidebar
+            currentConversationId={conversationId}
+            conversations={savedConversations}
+            onLoadConversation={loadConversation}
+            onNewConversation={startNewConversation}
+            onDeleteConversation={handleDeleteConversation}
+          />
+        )}
 
-      {/* Anticipatory Actions */}
-      <AnticipatoryActions onActionSelect={handleAnticipatorAction} />
+        {/* Main Chat Area */}
+        <div className="flex flex-1 flex-col">
+          {/* Toggle Sidebar Button */}
+          <div className="border-b border-zinc-800 px-3 py-2 md:block hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowConversations(!showConversations)}
+              className="gap-2 text-zinc-400 hover:text-white"
+            >
+              {showConversations ? (
+                <>
+                  <PanelLeftClose className="h-4 w-4" />
+                  <span className="text-xs">Hide History</span>
+                </>
+              ) : (
+                <>
+                  <PanelLeft className="h-4 w-4" />
+                  <span className="text-xs">Show History</span>
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Messages Area */}
+          <main className="flex-1 overflow-y-auto scrollbar-thin">
+            <div className="mx-auto max-w-3xl px-4 py-4 space-y-4">
+              {messages.map((message) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  onGenerateProposal={handleGenerateProposal}
+                />
+              ))}
+              
+              {/* Proposal Diagrams Section */}
+              {proposalDiagrams && proposalDiagrams.length > 0 && (
+                <div className="space-y-3 pt-3 border-t border-zinc-800">
+                  <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono uppercase tracking-wider">
+                    <BarChart3 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    <span>Diagrams</span>
+                    <button 
+                      onClick={() => setProposalDiagrams([])}
+                      className="ml-auto text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-200"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {proposalDiagrams.map((diagram, index) => (
+                    <DiagramRenderer key={index} diagram={diagram} />
+                  ))}
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
+          </main>
+
+          {/* Anticipatory Actions */}
+          <AnticipatoryActions onActionSelect={handleAnticipatorAction} />
 
       {/* Input Area */}
       <ChatInput
@@ -257,6 +331,8 @@ export default function Chat() {
           }}
         />
       )}
+        </div>
+      </div>
     </PageTransition>
   );
 }

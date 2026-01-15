@@ -2,6 +2,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { ChatMessage as APIChatMessage, chat, ExtractionProgress } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
+const STORAGE_KEY = 'dave-conversations';
+const MAX_CONVERSATIONS = 20;
+
 export type LoadingPhase = 'idle' | 'thinking' | 'working' | 'streaming';
 
 export interface ChatMessage extends APIChatMessage {
@@ -16,6 +19,13 @@ export interface ChatMessage extends APIChatMessage {
     type: "contacts" | "appointments" | "tasks" | "proposal";
     data: unknown;
   };
+}
+
+export interface SavedConversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  lastUpdated: Date;
 }
 
 const WORKING_MESSAGES = [
@@ -68,6 +78,9 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>('idle');
   const [workingMessageIndex, setWorkingMessageIndex] = useState(0);
+  const [conversationId, setConversationId] = useState<string>(() => {
+    return `conv-${Date.now()}`;
+  });
   const loadingMessageIdRef = useRef<string | null>(null);
   const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const workingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -266,10 +279,87 @@ export function useChat() {
     ]);
   }, []);
 
+  const saveConversation = useCallback(() => {
+    if (messages.length <= 1) return; // Don't save if only welcome message
+
+    const savedConversations: SavedConversation[] = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) || '[]'
+    );
+
+    // Generate title from first user message
+    const firstUserMsg = messages.find(m => m.role === 'user');
+    const title = firstUserMsg
+      ? firstUserMsg.content.slice(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '')
+      : 'New Conversation';
+
+    const conversation: SavedConversation = {
+      id: conversationId,
+      title,
+      messages: messages.filter(m => m.id !== 'welcome'),
+      lastUpdated: new Date(),
+    };
+
+    // Update or add conversation
+    const existingIndex = savedConversations.findIndex(c => c.id === conversationId);
+    if (existingIndex >= 0) {
+      savedConversations[existingIndex] = conversation;
+    } else {
+      savedConversations.unshift(conversation);
+    }
+
+    // Keep only last MAX_CONVERSATIONS
+    const trimmed = savedConversations.slice(0, MAX_CONVERSATIONS);
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+  }, [conversationId, messages]);
+
+  const loadConversation = useCallback((convId: string) => {
+    const savedConversations: SavedConversation[] = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) || '[]'
+    );
+
+    const conversation = savedConversations.find(c => c.id === convId);
+    if (conversation) {
+      setConversationId(convId);
+      setMessages([
+        {
+          id: "welcome",
+          role: "assistant",
+          content: "Good morning, Dave. How can I help you today?",
+          timestamp: new Date(),
+        },
+        ...conversation.messages.map(m => ({
+          ...m,
+          timestamp: new Date(m.timestamp)
+        }))
+      ]);
+    }
+  }, []);
+
+  const startNewConversation = useCallback(() => {
+    setConversationId(`conv-${Date.now()}`);
+    clearMessages();
+  }, [clearMessages]);
+
+  const getSavedConversations = useCallback((): SavedConversation[] => {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  }, []);
+
+  // Auto-save after messages change
+  useEffect(() => {
+    if (messages.length > 1 && !isLoading) {
+      saveConversation();
+    }
+  }, [messages, isLoading, saveConversation]);
+
   return {
     messages,
     isLoading,
     sendMessage,
     clearMessages,
+    conversationId,
+    loadConversation,
+    startNewConversation,
+    getSavedConversations,
   };
 }
