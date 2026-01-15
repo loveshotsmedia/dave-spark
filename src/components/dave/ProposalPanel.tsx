@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, FileText, Loader2, BarChart3 } from "lucide-react";
+import { Search, FileText, Loader2, BarChart3, Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,6 +98,8 @@ export function ProposalPanel({
   const [additionalContext, setAdditionalContext] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedProposalId, setGeneratedProposalId] = useState<string | null>(null);
+  const [showActions, setShowActions] = useState(false);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -231,7 +233,7 @@ export function ProposalPanel({
       }
 
       // Save proposal to content library for future reference
-      await uploadContent({
+      const uploadResult = await uploadContent({
         title: `${proposalType} Proposal - ${selectedContact.full_name}`,
         content_type: "proposal",
         description: `Generated ${proposalType} proposal for ${selectedContact.full_name} on ${new Date().toLocaleDateString()}`,
@@ -241,9 +243,16 @@ export function ProposalPanel({
         file_content: cleanedProposal, // Store the cleaned proposal text
       });
 
+      // Store proposal ID for download actions
+      if (uploadResult?.id) {
+        setGeneratedProposalId(uploadResult.id);
+        setShowActions(true);
+      }
+
       toast({
-        title: "Proposal saved",
-        description: `Proposal saved to Content Library for ${selectedContact.full_name}`,
+        title: "Proposal Ready!",
+        description: "Download as PDF or send to client",
+        duration: 5000,
       });
 
       onProposalGenerated(cleanedProposal, selectedContact.full_name, diagrams);
@@ -261,12 +270,53 @@ export function ProposalPanel({
     }
   };
 
+  const handleDownloadPDF = () => {
+    if (!generatedProposalId) {
+      toast({
+        title: "Error",
+        description: "No proposal available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const proposalUrl = `https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api/content/view/${generatedProposalId}`;
+    const printWindow = window.open(proposalUrl, '_blank', 'width=1024,height=768');
+    
+    if (printWindow) {
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
+    }
+
+    toast({
+      title: "Opening Print Dialog",
+      description: "Choose 'Save as PDF' to download",
+    });
+  };
+
+  const handleViewProposal = () => {
+    if (!generatedProposalId) return;
+
+    const viewUrl = `https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api/content/view/${generatedProposalId}`;
+    window.open(viewUrl, '_blank');
+
+    toast({
+      title: "Opening Proposal",
+      description: "Use Ctrl+P to print or save as PDF",
+    });
+  };
+
   const resetForm = () => {
     setSearchQuery("");
     setSearchResults([]);
     setSelectedContact(null);
     setProposalType("");
     setAdditionalContext("");
+    setGeneratedProposalId(null);
+    setShowActions(false);
   };
 
   return (
@@ -373,6 +423,37 @@ export function ProposalPanel({
             </>
           )}
         </Button>
+
+        {/* PDF Download Actions */}
+        {showActions && generatedProposalId && (
+          <div className="mt-6 pt-4 border-t border-zinc-800 space-y-3">
+            <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
+              Proposal Actions
+            </p>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleDownloadPDF}
+                variant="outline"
+                size="lg"
+                className="flex-1"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download as PDF
+              </Button>
+              <Button
+                onClick={handleViewProposal}
+                variant="ghost"
+                size="lg"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View
+              </Button>
+            </div>
+            <p className="text-xs text-zinc-600">
+              Click "Download as PDF" and choose "Save as PDF" from the print dialog
+            </p>
+          </div>
+        )}
       </div>
     </SlidePanel>
   );
