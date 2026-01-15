@@ -218,6 +218,14 @@ export default function Chat() {
                 />
               ))}
               
+              {/* Proposal Actions - Download/Send */}
+              {lastProposalId && (
+                <ProposalActions 
+                  proposalId={lastProposalId} 
+                  contactName={lastProposalContactName}
+                />
+              )}
+              
               {/* Proposal Diagrams Section */}
               {proposalDiagrams && proposalDiagrams.length > 0 && (
                 <div className="space-y-3 pt-3 border-t border-zinc-800">
@@ -225,7 +233,11 @@ export default function Chat() {
                     <BarChart3 className="h-3.5 w-3.5" strokeWidth={1.5} />
                     <span>Diagrams</span>
                     <button 
-                      onClick={() => setProposalDiagrams([])}
+                      onClick={() => {
+                        setProposalDiagrams([]);
+                        setLastProposalId(null);
+                        setLastProposalContactName('');
+                      }}
                       className="ml-auto text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-200"
                     >
                       Clear
