@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/effects/PageTransition";
+import { Header } from "@/components/dave/Header";
 import {
   Mail,
   MessageSquare,
@@ -37,7 +38,7 @@ import { CampaignDetailDialog } from "@/components/dave/CampaignDetailDialog";
 
 export default function Campaigns() {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, signOut } = useAuth();
 
   const [campaigns, setCampaigns] = useState<DripCampaign[]>([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState<DripCampaign[]>([]);
@@ -101,71 +102,61 @@ export default function Campaigns() {
     }
   }
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
   // Get unique topics for filter (filter out empty strings)
   const topics = [...new Set(campaigns.map((c) => c.topic).filter(Boolean))];
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     );
   }
 
   return (
-    <PageTransition className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur-sm">
-        <div className="mx-auto max-w-6xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Campaigns</h1>
-              <p className="text-sm text-muted-foreground">
-                Manage drip campaigns and enrollments
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={fetchCampaigns}>
-                <RefreshCw className="h-4 w-4 mr-1" />
-                Refresh
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate("/chat")}>
-                Back to Chat
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <PageTransition className="min-h-screen bg-black">
+      <Header onLogout={handleLogout} onSettingsClick={() => {}} />
 
-      <main className="mx-auto max-w-6xl px-4 py-6">
+      <main className="mx-auto max-w-6xl px-3 md:px-4 py-4 md:py-6">
+        {/* Page Title */}
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-lg md:text-xl font-semibold text-zinc-200 uppercase tracking-wide">Campaigns</h1>
+          <p className="text-xs text-zinc-500 font-mono">Manage drip campaigns and enrollments</p>
+        </div>
+
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-4 md:mb-6">
+          <div className="relative flex-1 min-w-[160px] max-w-md">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
             <Input
-              placeholder="Search campaigns..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-8 h-8 text-xs bg-zinc-900 border-zinc-800 rounded-sm"
             />
           </div>
 
           <Select value={channelFilter} onValueChange={setChannelFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[100px] md:w-[120px] h-8 text-xs bg-zinc-900 border-zinc-800 rounded-sm">
               <SelectValue placeholder="Channel" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Channels</SelectItem>
+            <SelectContent className="bg-zinc-950 border-zinc-800 rounded-sm">
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="email">Email</SelectItem>
               <SelectItem value="sms">SMS</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={topicFilter} onValueChange={setTopicFilter}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[100px] md:w-[140px] h-8 text-xs bg-zinc-900 border-zinc-800 rounded-sm">
               <SelectValue placeholder="Topic" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-zinc-950 border-zinc-800 rounded-sm">
               <SelectItem value="all">All Topics</SelectItem>
               {topics.map((topic) => (
                 <SelectItem key={topic} value={topic}>
@@ -175,56 +166,60 @@ export default function Campaigns() {
             </SelectContent>
           </Select>
 
-          <div className="flex items-center border rounded-lg">
+          <div className="flex items-center border border-zinc-800 rounded-sm ml-auto">
             <Button
               variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="sm"
-              className="rounded-r-none"
+              className="rounded-none rounded-l-sm h-7 px-2"
               onClick={() => setViewMode("grid")}
             >
-              <LayoutGrid className="h-4 w-4" />
+              <LayoutGrid className="h-3.5 w-3.5" />
             </Button>
             <Button
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="sm"
-              className="rounded-l-none"
+              className="rounded-none rounded-r-sm h-7 px-2"
               onClick={() => setViewMode("list")}
             >
-              <List className="h-4 w-4" />
+              <List className="h-3.5 w-3.5" />
             </Button>
           </div>
+
+          <Button variant="ghost" size="sm" onClick={fetchCampaigns} className="h-7 px-2 rounded-sm text-zinc-500 hover:text-zinc-300">
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold">{campaigns.length}</div>
-              <p className="text-sm text-muted-foreground">Total Campaigns</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 md:mb-6">
+          <Card className="bg-zinc-900 border-zinc-800 rounded-sm">
+            <CardContent className="pt-3 pb-3">
+              <div className="text-xl font-bold text-zinc-200">{campaigns.length}</div>
+              <p className="text-xs text-zinc-500 font-mono">Total</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-success">
+          <Card className="bg-zinc-900 border-zinc-800 rounded-sm">
+            <CardContent className="pt-3 pb-3">
+              <div className="text-xl font-bold text-emerald-500">
                 {campaigns.filter((c) => c.is_active).length}
               </div>
-              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-xs text-zinc-500 font-mono">Active</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold">
+          <Card className="bg-zinc-900 border-zinc-800 rounded-sm">
+            <CardContent className="pt-3 pb-3">
+              <div className="text-xl font-bold text-zinc-200">
                 {campaigns.filter((c) => c.channel === "email").length}
               </div>
-              <p className="text-sm text-muted-foreground">Email Campaigns</p>
+              <p className="text-xs text-zinc-500 font-mono">Email</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold">
+          <Card className="bg-zinc-900 border-zinc-800 rounded-sm">
+            <CardContent className="pt-3 pb-3">
+              <div className="text-xl font-bold text-zinc-200">
                 {campaigns.filter((c) => c.channel === "sms").length}
               </div>
-              <p className="text-sm text-muted-foreground">SMS Campaigns</p>
+              <p className="text-xs text-zinc-500 font-mono">SMS</p>
             </CardContent>
           </Card>
         </div>

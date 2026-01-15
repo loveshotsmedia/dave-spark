@@ -247,7 +247,7 @@ export function ChatInput({
           accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.gif,.webp"
         />
 
-        <div className="flex flex-wrap gap-1">
+        <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-thin md:flex-wrap md:overflow-visible md:pb-0">
           <QuickActionButton
             icon={<Paperclip className="h-3 w-3" strokeWidth={1.5} />}
             label="Attach"

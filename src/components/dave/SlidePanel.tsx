@@ -20,7 +20,7 @@ export function SlidePanel({ title, isOpen, onClose, children }: SlidePanelProps
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md animate-slide-in-right bg-card shadow-xl">
+      <div className="fixed right-0 top-0 z-50 h-full w-full animate-slide-in-right bg-card shadow-xl md:max-w-md">
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b px-6 py-4">
             <h2 className="text-lg font-semibold">{title}</h2>

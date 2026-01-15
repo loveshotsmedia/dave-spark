@@ -90,10 +90,10 @@ export function AnticipatoryActions({ onActionSelect }: AnticipatoryActionsProps
   // Don't render while loading or if all dismissed
   if (loading) {
     return (
-      <div className="fixed bottom-28 left-1/2 z-30 -translate-x-1/2 md:bottom-32">
-        <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur-sm border shadow-lg px-4 py-2">
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Loading suggestions...</span>
+      <div className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 max-w-[95vw] md:bottom-32">
+        <div className="flex items-center gap-2 rounded-sm bg-zinc-900/95 backdrop-blur-sm border border-zinc-800 shadow-lg px-3 py-2">
+          <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+          <span className="text-xs text-zinc-500 font-mono">Loading...</span>
         </div>
       </div>
     );
@@ -104,31 +104,32 @@ export function AnticipatoryActions({ onActionSelect }: AnticipatoryActionsProps
   }
 
   return (
-    <div className="fixed bottom-28 left-1/2 z-30 -translate-x-1/2 md:bottom-32">
-      <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur-sm border shadow-lg px-2 py-1.5">
-        <Sparkles className="h-4 w-4 text-primary ml-2" />
+    <div className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 max-w-[95vw] md:bottom-32">
+      <div className="flex items-center gap-1 md:gap-2 rounded-sm bg-zinc-900/95 backdrop-blur-sm border border-zinc-800 shadow-lg px-2 py-1.5 overflow-x-auto scrollbar-thin">
+        <Sparkles className="h-4 w-4 text-emerald-500 ml-1 shrink-0" />
         
         {suggestions.map((suggestion, idx) => !dismissed.has(idx) && (
           <div
             key={idx}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 shrink-0"
           >
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onActionSelect(suggestion.action)}
-              className={`rounded-full text-sm px-3 py-1 h-auto hover:bg-primary/10 flex items-center ${
-                suggestion.priority === "high" ? "text-destructive" : ""
+              className={`rounded-sm text-xs px-2 py-1 h-auto hover:bg-zinc-800 flex items-center font-mono ${
+                suggestion.priority === "high" ? "text-red-400" : "text-zinc-400"
               }`}
             >
               {suggestion.icon}
-              {suggestion.action}
+              <span className="hidden sm:inline">{suggestion.action}</span>
+              <span className="sm:hidden">{suggestion.action.split(' ').slice(0, 3).join(' ')}...</span>
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setDismissed((prev) => new Set([...prev, idx]))}
-              className="h-5 w-5 rounded-full text-muted-foreground hover:text-foreground"
+              className="h-5 w-5 rounded-sm text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800"
             >
               <X className="h-3 w-3" />
             </Button>
