@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { PageTransition } from "@/components/effects/PageTransition";
 import { useChat } from "@/hooks/useChat";
 import { Header } from "@/components/dave/Header";
 import { ChatMessage } from "@/components/dave/ChatMessage";
@@ -115,7 +116,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-black">
+    <PageTransition className="flex h-screen flex-col bg-black">
       <Header onLogout={handleLogout} onSettingsClick={() => setIsSettingsOpen(true)} />
 
       {/* Messages Area */}
@@ -256,6 +257,6 @@ export default function Chat() {
           }}
         />
       )}
-    </div>
+    </PageTransition>
   );
 }

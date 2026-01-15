@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { PageTransition } from "@/components/effects/PageTransition";
 import { Header } from "@/components/dave/Header";
 import {
   listKnowledge,
@@ -341,7 +342,7 @@ export default function KnowledgeBase() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-background">
+    <PageTransition className="flex h-screen flex-col bg-background">
       <Header onLogout={handleLogout} onSettingsClick={() => {}} />
 
       <main className="flex-1 overflow-y-auto">
@@ -922,6 +923,6 @@ Content of the second entry...`}
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageTransition>
   );
 }

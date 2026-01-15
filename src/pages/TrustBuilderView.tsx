@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { PageTransition } from "@/components/effects/PageTransition";
 import { getTrustBuilderView, submitTrustBuilderFeedback } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -181,7 +182,7 @@ export default function TrustBuilderView() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <PageTransition className="min-h-screen bg-[#f8f9fa]">
       {/* Header */}
       <header className="bg-[#1a365d] text-white py-6">
         <div className="max-w-3xl mx-auto px-4">
@@ -401,6 +402,6 @@ export default function TrustBuilderView() {
           </p>
         </div>
       </footer>
-    </div>
+    </PageTransition>
   );
 }
