@@ -1,4 +1,5 @@
-import { Settings, LogOut, Users, FolderOpen, Mail, BookOpen, Briefcase, Inbox } from "lucide-react";
+import { Settings, LogOut, Users, FolderOpen, Mail, BookOpen, Briefcase, Inbox, Menu, X } from "lucide-react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -9,6 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { RiskBadges } from "./RiskBadges";
 
 interface HeaderProps {
@@ -19,12 +27,76 @@ interface HeaderProps {
 export function Header({ onLogout, onSettingsClick }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
+  const navItems = [
+    { path: "/contacts", label: "Contacts", icon: Users },
+    { path: "/cases", label: "Cases", icon: Briefcase },
+    { path: "/knowledge", label: "Knowledge", icon: BookOpen },
+    { path: "/content-library", label: "Content", icon: FolderOpen },
+    { path: "/campaigns", label: "Campaigns", icon: Mail },
+    { path: "/inbox", label: "Inbox", icon: Inbox },
+  ];
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b border-zinc-800 bg-black px-4 md:px-6">
-      <div className="flex items-center gap-6">
+    <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b border-zinc-800 bg-black px-3 md:px-6">
+      <div className="flex items-center gap-3 md:gap-6">
+        {/* Mobile Hamburger Menu */}
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetTrigger asChild className="md:hidden">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900">
+              <Menu className="h-5 w-5" strokeWidth={1.5} />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 bg-black border-zinc-800 p-0">
+            <SheetHeader className="border-b border-zinc-800 px-4 py-3">
+              <SheetTitle className="flex items-center gap-2 text-left">
+                <span className="text-xs font-semibold uppercase tracking-widest text-zinc-500">WFS</span>
+                <span className="text-xs font-mono text-zinc-400">Dave 2.0</span>
+              </SheetTitle>
+            </SheetHeader>
+            <nav className="flex flex-col py-2">
+              {navItems.map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavigate(item.path)}
+                  className={`
+                    flex items-center gap-3 px-4 py-3 text-sm transition-colors duration-200
+                    ${isActive(item.path) 
+                      ? 'text-white bg-zinc-900 border-l-2 border-l-emerald-500' 
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+                    }
+                  `}
+                >
+                  <item.icon className="h-4 w-4" strokeWidth={1.5} />
+                  <span className="uppercase tracking-wide text-xs">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+            <div className="absolute bottom-0 left-0 right-0 border-t border-zinc-800 p-4">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  onLogout();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full justify-start gap-2 text-red-500 hover:text-red-400 hover:bg-zinc-900 rounded-sm"
+              >
+                <LogOut className="h-4 w-4" strokeWidth={1.5} />
+                <span className="text-xs uppercase tracking-wide">Logout</span>
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Logo */}
         <div 
           className="flex items-center gap-2 cursor-pointer" 
           onClick={() => navigate("/chat")}
@@ -33,54 +105,22 @@ export function Header({ onLogout, onSettingsClick }: HeaderProps) {
           <span className="text-xs font-mono text-zinc-400">Dave 2.0</span>
         </div>
 
-        {/* Navigation Links */}
+        {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center">
-          <NavLink 
-            active={isActive("/contacts")} 
-            onClick={() => navigate("/contacts")}
-            icon={<Users className="h-3.5 w-3.5" strokeWidth={1.5} />}
-          >
-            Contacts
-          </NavLink>
-          <NavLink 
-            active={isActive("/cases")} 
-            onClick={() => navigate("/cases")}
-            icon={<Briefcase className="h-3.5 w-3.5" strokeWidth={1.5} />}
-          >
-            Cases
-          </NavLink>
-          <NavLink 
-            active={isActive("/knowledge")} 
-            onClick={() => navigate("/knowledge")}
-            icon={<BookOpen className="h-3.5 w-3.5" strokeWidth={1.5} />}
-          >
-            Knowledge
-          </NavLink>
-          <NavLink 
-            active={isActive("/content-library")} 
-            onClick={() => navigate("/content-library")}
-            icon={<FolderOpen className="h-3.5 w-3.5" strokeWidth={1.5} />}
-          >
-            Content
-          </NavLink>
-          <NavLink 
-            active={isActive("/campaigns")} 
-            onClick={() => navigate("/campaigns")}
-            icon={<Mail className="h-3.5 w-3.5" strokeWidth={1.5} />}
-          >
-            Campaigns
-          </NavLink>
-          <NavLink 
-            active={isActive("/inbox")} 
-            onClick={() => navigate("/inbox")}
-            icon={<Inbox className="h-3.5 w-3.5" strokeWidth={1.5} />}
-          >
-            Inbox
-          </NavLink>
+          {navItems.map((item) => (
+            <NavLink 
+              key={item.path}
+              active={isActive(item.path)} 
+              onClick={() => navigate(item.path)}
+              icon={<item.icon className="h-3.5 w-3.5" strokeWidth={1.5} />}
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 md:gap-2">
         <RiskBadges />
 
         <Button
@@ -112,31 +152,6 @@ export function Header({ onLogout, onSettingsClick }: HeaderProps) {
               <span className="text-xs">Dave Wilson</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-zinc-800" />
-            <DropdownMenuItem onClick={() => navigate("/contacts")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
-              <Users className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
-              Contacts
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/cases")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
-              <Briefcase className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
-              Cases
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/knowledge")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
-              <BookOpen className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
-              Knowledge Base
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/content-library")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
-              <FolderOpen className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
-              Content Library
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/campaigns")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
-              <Mail className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
-              Campaigns
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/inbox")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
-              <Inbox className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
-              Inbox
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="md:hidden bg-zinc-800" />
             <DropdownMenuItem onClick={onLogout} className="text-red-500 focus:bg-zinc-900 focus:text-red-400 text-xs rounded-sm">
               <LogOut className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
               Logout
