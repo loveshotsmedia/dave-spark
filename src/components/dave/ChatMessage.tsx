@@ -1,13 +1,13 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChatMessage as ChatMessageType } from "@/hooks/useChat";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { TypingIndicator } from "./TypingIndicator";
 import { ContactCard } from "./ContactCard";
 import { Contact } from "@/lib/api";
 import { GaarWarningBadge, useGaarCheck } from "./GaarWarningBadge";
 import { DiagramRenderer, type Diagram } from "./DiagramRenderer";
 import { useMemo } from "react";
-
 // Extract mermaid diagrams from markdown content
 function extractMermaidDiagrams(content: string): { cleanContent: string; diagrams: Diagram[] } {
   const diagrams: Diagram[] = [];
@@ -149,6 +149,7 @@ export function ChatMessage({ message, onGenerateProposal }: ChatMessageProps) {
               "
             >
                 <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
                   components={{
                     p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
                     h1: ({ children }) => <h1 className="text-base font-semibold mb-3 mt-4 text-zinc-200">{children}</h1>,
