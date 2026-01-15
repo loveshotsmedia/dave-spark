@@ -1,7 +1,7 @@
 import { FileText, Upload, Loader2, Brain, Sparkles } from "lucide-react";
 import type { ExtractionProgress } from "@/lib/api";
 import type { LoadingPhase } from "@/hooks/useChat";
-import { Progress } from "@/components/ui/progress";
+import ReactMarkdown from "react-markdown";
 
 interface TypingIndicatorProps {
   extractionProgress?: ExtractionProgress;
@@ -16,29 +16,24 @@ export function TypingIndicator({
   loadingPhase = 'idle',
   workingMessage,
   typedContent,
-  fullContent
 }: TypingIndicatorProps) {
-  // Show streaming content (real-time response) - prioritize this over all other states
-  if (loadingPhase === 'streaming' && typedContent) {
-    return (
-      <div className="prose prose-sm max-w-none dark:prose-invert">
-        <span>{typedContent}</span>
-        <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5" />
-      </div>
-    );
-  }
-
-  // If we have typed content but phase hasn't updated yet, still show it
+  // PRIORITY 1: Show streaming content (real-time response) - this takes precedence over everything
   if (typedContent && typedContent.length > 0) {
     return (
       <div className="prose prose-sm max-w-none dark:prose-invert">
-        <span>{typedContent}</span>
-        <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5" />
+        <ReactMarkdown
+          components={{
+            p: ({ children }) => <span className="inline">{children}</span>,
+          }}
+        >
+          {typedContent}
+        </ReactMarkdown>
+        <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
       </div>
     );
   }
 
-  // Show extraction progress if available
+  // PRIORITY 2: Show extraction progress if available
   if (extractionProgress && extractionProgress.stage !== 'complete') {
     const { stage, fileName, currentPage, totalPages, fileIndex, totalFiles } = extractionProgress;
     
@@ -75,44 +70,37 @@ export function TypingIndicator({
     );
   }
 
-  // Show thinking state
+  // PRIORITY 3: Show thinking state (initial wait)
   if (loadingPhase === 'thinking') {
     return (
-      <div className="flex flex-col gap-2 py-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Brain className="h-4 w-4 animate-pulse text-primary" />
-          <span className="flex items-center">
-            Dave is thinking
-            <span className="inline-flex ml-1">
-              <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
-              <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
-              <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
-            </span>
+      <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
+        <Brain className="h-4 w-4 animate-pulse text-primary" />
+        <span className="flex items-center">
+          Thinking
+          <span className="inline-flex ml-1">
+            <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+            <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
+            <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
           </span>
-        </div>
+        </span>
       </div>
     );
   }
 
-  // Show working state with rotating messages
+  // PRIORITY 4: Show working state (longer wait, rotating messages)
   if (loadingPhase === 'working') {
     return (
-      <div className="flex flex-col gap-3 py-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Sparkles className="h-4 w-4 animate-pulse text-primary" />
-          <span className="transition-opacity duration-300">
-            {workingMessage || "Dave is thinking..."}
-          </span>
-        </div>
-        {/* Indeterminate progress bar */}
-        <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
-          <div className="h-full bg-primary/60 animate-progress rounded-full" />
-        </div>
+      <div className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
+        <Sparkles className="h-4 w-4 animate-pulse text-primary" />
+        <span className="transition-opacity duration-300">
+          {workingMessage || "Processing..."}
+        </span>
+        <Loader2 className="h-3 w-3 animate-spin ml-1" />
       </div>
     );
   }
 
-  // Default typing indicator (3 dots)
+  // Default: streaming phase without content yet, or idle - show simple indicator
   return (
     <div className="flex items-center gap-1 py-1">
       <span className="typing-dot h-2 w-2 rounded-full bg-muted-foreground" />
