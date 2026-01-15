@@ -246,9 +246,31 @@
 }
 
 /* Professional Mermaid Diagram Styling */
+.diagram-loading {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.diagram-loaded {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .diagram-container svg {
   max-width: 100%;
   height: auto;
+}
+
+/* Node animations */
+.diagram-container .node {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.diagram-container .node.animate-in {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .diagram-container .node rect,
@@ -257,21 +279,36 @@
 .diagram-container .node polygon {
   stroke-width: 2px !important;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .diagram-container .node:hover rect,
 .diagram-container .node:hover circle,
 .diagram-container .node:hover ellipse,
 .diagram-container .node:hover polygon {
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+  transform: translateY(-2px);
 }
 
-.diagram-container .nodeLabel,
-.diagram-container .edgeLabel {
-  font-weight: 500;
-  font-size: 13px;
-  line-height: 1.4;
+/* Edge animations */
+.diagram-container .edgePath {
+  opacity: 0;
+}
+
+.diagram-container .edgePath.animate-in {
+  opacity: 1;
+  animation: drawLine 0.6s ease-out forwards;
+}
+
+@keyframes drawLine {
+  from {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 0;
+  }
 }
 
 .diagram-container .edgePath .path {
@@ -281,6 +318,19 @@
 .diagram-container .marker {
   fill: #6B7280;
   stroke: #6B7280;
+  opacity: 0;
+  transition: opacity 0.3s ease 0.5s;
+}
+
+.diagram-loaded .marker {
+  opacity: 1;
+}
+
+.diagram-container .nodeLabel,
+.diagram-container .edgeLabel {
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 /* Gantt chart styling */
@@ -291,9 +341,49 @@
 
 .diagram-container .task {
   stroke-width: 2px;
+  transform-origin: left center;
+  animation: expandBar 0.6s ease forwards;
+}
+
+@keyframes expandBar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .diagram-container .taskText {
   fill: #f4f4f5;
   font-weight: 500;
+}
+
+/* Print styles for proposals */
+@media print {
+  @page {
+    margin: 0.5in;
+    size: letter;
+  }
+
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #000;
+  }
+
+  .diagram-container {
+    page-break-inside: avoid;
+    margin: 12pt 0;
+  }
+
+  button, .no-print {
+    display: none !important;
+  }
+
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
 }

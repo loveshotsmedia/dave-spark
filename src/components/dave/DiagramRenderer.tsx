@@ -1,6 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Download, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 
 interface Diagram {
   type: string;
@@ -17,6 +20,7 @@ interface DiagramRendererProps {
 export function DiagramRenderer({ diagram }: DiagramRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(`mermaid-${Math.random().toString(36).substring(7)}`);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (diagram.format === 'mermaid' && containerRef.current) {
@@ -78,9 +82,31 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
       // Render the diagram
       const render = async () => {
         try {
+          setIsLoaded(false);
           const { svg } = await mermaid.render(idRef.current, diagram.content);
           if (containerRef.current) {
             containerRef.current.innerHTML = svg;
+            
+            // Trigger animations after render
+            setTimeout(() => {
+              setIsLoaded(true);
+              
+              // Animate nodes sequentially
+              const nodes = containerRef.current?.querySelectorAll('.node');
+              nodes?.forEach((node, index) => {
+                setTimeout(() => {
+                  (node as HTMLElement).classList.add('animate-in');
+                }, index * 100);
+              });
+
+              // Animate edges after nodes
+              const edges = containerRef.current?.querySelectorAll('.edgePath');
+              edges?.forEach((edge, index) => {
+                setTimeout(() => {
+                  (edge as HTMLElement).classList.add('animate-in');
+                }, ((nodes?.length || 0) * 100) + (index * 50));
+              });
+            }, 100);
           }
         } catch (error) {
           console.error('Mermaid render error:', error);
@@ -94,11 +120,56 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
     }
   }, [diagram.content, diagram.format]);
 
+  const handleDownloadSVG = () => {
+    if (!containerRef.current) return;
+    
+    const svg = containerRef.current.querySelector('svg');
+    if (!svg) return;
+    
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${diagram.title || 'diagram'}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Downloaded",
+      description: "Diagram saved as SVG",
+    });
+  };
+
+  const handleOpenFullscreen = () => {
+    if (!containerRef.current) return;
+    
+    const svg = containerRef.current.querySelector('svg');
+    if (!svg) return;
+    
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    
+    window.open(url, '_blank');
+  };
+
   return (
-    <Card className="overflow-hidden border-zinc-800 bg-zinc-900/50">
+    <Card className={`overflow-hidden border-zinc-800 bg-zinc-900/50 transition-all duration-500 ${isLoaded ? 'diagram-loaded' : 'diagram-loading'}`}>
       {diagram.title && (
-        <CardHeader className="pb-2 border-b border-zinc-800">
+        <CardHeader className="pb-2 border-b border-zinc-800 flex flex-row items-center justify-between">
           <CardTitle className="text-base font-medium text-zinc-200">{diagram.title}</CardTitle>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDownloadSVG}>
+              <Download className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleOpenFullscreen}>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </CardHeader>
       )}
       <CardContent className="pt-4">
