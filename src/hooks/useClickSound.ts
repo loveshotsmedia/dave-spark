@@ -1,21 +1,50 @@
-import useSound from 'use-sound';
+import { useCallback, useRef } from 'react';
 
 // Mechanical click sound for tactile feedback
 const CLICK_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3';
 
-export function useClickSound() {
-  const [play] = useSound(CLICK_SOUND_URL, { 
-    volume: 0.25 // Low volume for professional feel
-  });
-  return play;
-}
-
 // Success ping for confirmations
 const SUCCESS_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3';
 
+// Use native Audio API to avoid React version conflicts with use-sound
+export function useClickSound() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  const play = useCallback(() => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(CLICK_SOUND_URL);
+        audioRef.current.volume = 0.25;
+      }
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {
+        // Ignore autoplay restrictions
+      });
+    } catch {
+      // Ignore errors
+    }
+  }, []);
+  
+  return play;
+}
+
 export function useSuccessSound() {
-  const [play] = useSound(SUCCESS_SOUND_URL, { 
-    volume: 0.3 
-  });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  const play = useCallback(() => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(SUCCESS_SOUND_URL);
+        audioRef.current.volume = 0.3;
+      }
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {
+        // Ignore autoplay restrictions
+      });
+    } catch {
+      // Ignore errors
+    }
+  }, []);
+  
   return play;
 }
