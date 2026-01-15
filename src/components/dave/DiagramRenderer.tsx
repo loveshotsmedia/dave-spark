@@ -43,52 +43,70 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
         theme: 'base',
         securityLevel: 'loose',
         themeVariables: {
-          // Professional color scheme
+          // Professional light color scheme for better readability
           primaryColor: '#0EA5E9',
-          primaryTextColor: '#FFFFFF',
+          primaryTextColor: '#1F2937',
           primaryBorderColor: '#0284C7',
 
           secondaryColor: '#8B5CF6',
-          secondaryTextColor: '#FFFFFF',
+          secondaryTextColor: '#1F2937',
           secondaryBorderColor: '#7C3AED',
 
           tertiaryColor: '#10B981',
-          tertiaryTextColor: '#FFFFFF',
+          tertiaryTextColor: '#1F2937',
           tertiaryBorderColor: '#059669',
 
-          // Node styling
+          // Node styling - lighter backgrounds for contrast
           nodeBorder: '#374151',
-          nodeTextColor: '#F9FAFB',
+          nodeTextColor: '#1F2937',
 
-          // Line styling
+          // Line styling - visible on light/dark
           lineColor: '#6B7280',
 
-          // Background
-          background: '#18181B',
-          mainBkg: '#27272A',
+          // Light background for better visibility
+          background: '#FFFFFF',
+          mainBkg: '#F3F4F6',
+
+          // Gantt specific
+          sectionBkgColor: '#F3F4F6',
+          sectionBkgColor2: '#E5E7EB',
+          altSectionBkgColor: '#FFFFFF',
+          gridColor: '#D1D5DB',
+          todayLineColor: '#EF4444',
+          taskBkgColor: '#0EA5E9',
+          taskTextColor: '#FFFFFF',
+          taskTextOutsideColor: '#1F2937',
+          activeTaskBkgColor: '#3B82F6',
+          activeTaskBorderColor: '#2563EB',
+          doneTaskBkgColor: '#10B981',
+          doneTaskBorderColor: '#059669',
+          critBkgColor: '#EF4444',
+          critBorderColor: '#DC2626',
 
           // Font
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-          fontSize: '14px',
+          fontSize: '13px',
         },
         flowchart: {
           htmlLabels: true,
           curve: 'basis',
-          padding: 20,
-          nodeSpacing: 50,
-          rankSpacing: 80,
-          diagramPadding: 30,
-          useMaxWidth: true,
+          padding: 15,
+          nodeSpacing: 60,
+          rankSpacing: 60,
+          diagramPadding: 20,
+          useMaxWidth: false,
         },
         gantt: {
           titleTopMargin: 25,
-          barHeight: 40,
-          barGap: 8,
-          topPadding: 75,
+          barHeight: 30,
+          barGap: 6,
+          topPadding: 60,
+          leftPadding: 120,
           gridLineStartPadding: 35,
           fontSize: 12,
+          sectionFontSize: 14,
           numberSectionStyles: 4,
-          useMaxWidth: true,
+          useMaxWidth: false,
         },
       });
 
@@ -209,11 +227,14 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
           </div>
         </CardHeader>
       )}
-      <CardContent className="pt-4">
+      <CardContent className="pt-4 pb-6">
         {diagram.format === 'mermaid' && (
           <div 
             ref={containerRef} 
-            className="diagram-container flex justify-center overflow-x-auto rounded-lg bg-gradient-to-b from-zinc-900 to-zinc-950 p-6"
+            className="diagram-container flex justify-center items-center overflow-auto rounded-xl bg-white p-8 min-h-[300px] shadow-inner"
+            style={{
+              maxWidth: '100%',
+            }}
           />
         )}
 
