@@ -184,6 +184,16 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
     window.open(url, '_blank');
   };
 
+  // Don't render card at all if there's nothing valid
+  if (diagram.format === 'mermaid' && hasRenderError) {
+    return null;
+  }
+
+  // Don't render if content is empty/undefined
+  if (diagram.format === 'mermaid' && !(diagram.content ?? '').trim()) {
+    return null;
+  }
+
   return (
     <Card className={`overflow-hidden border-zinc-800 bg-zinc-900/50 transition-all duration-500 ${isLoaded ? 'diagram-loaded' : 'diagram-loading'}`}>
       {diagram.title && (

@@ -12,54 +12,27 @@ import { useMemo } from "react";
 function extractMermaidDiagrams(content: string): { cleanContent: string; diagrams: Diagram[] } {
   const diagrams: Diagram[] = [];
   
-  // Match mermaid code blocks: ```mermaid ... ``` or direct mermaid syntax
+  // Match mermaid code blocks: ```mermaid ... ``` 
   const mermaidBlockPattern = /```mermaid\n([\s\S]*?)```/g;
-  
-  // Also match inline mermaid syntax (graph TD, gantt, sequenceDiagram, etc.)
-  const inlineMermaidPattern = /\n((?:graph\s+(?:TD|LR|TB|BT|RL)|gantt|sequenceDiagram|classDiagram|stateDiagram|erDiagram|flowchart\s+(?:TD|LR|TB|BT|RL)|pie|journey)[\s\S]*?)(?=\n\n[A-Z]|\n\n\*\*|\n\n#|\n\n\||\n\n-|\n\n\d\.|\n\n$|$)/gi;
   
   let cleanContent = content;
   let diagramIndex = 0;
   
-  // Extract ```mermaid``` code blocks
+  // Extract ```mermaid``` code blocks only
   let match;
   while ((match = mermaidBlockPattern.exec(content)) !== null) {
-    diagrams.push({
-      type: 'flowchart',
-      format: 'mermaid',
-      content: match[1].trim(),
-      title: `Diagram ${++diagramIndex}`
-    });
+    const diagramContent = (match[1] ?? '').trim();
+    // Only add if content is non-empty and looks like valid mermaid
+    if (diagramContent && /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey)/i.test(diagramContent)) {
+      diagrams.push({
+        type: 'flowchart',
+        format: 'mermaid',
+        content: diagramContent,
+        title: `Diagram ${++diagramIndex}`
+      });
+    }
   }
   cleanContent = cleanContent.replace(mermaidBlockPattern, '\n\n');
-  
-  // Extract inline mermaid syntax (more common in AI responses)
-  const inlineMatches: { match: string; index: number }[] = [];
-  while ((match = inlineMermaidPattern.exec(cleanContent)) !== null) {
-    inlineMatches.push({ match: match[1].trim(), index: match.index });
-  }
-  
-  // Process from end to start to preserve indices
-  for (let i = inlineMatches.length - 1; i >= 0; i--) {
-    const m = inlineMatches[i];
-    const diagramContent = m.match;
-    
-    // Determine diagram type from content
-    let type = 'flowchart';
-    if (diagramContent.startsWith('gantt')) type = 'gantt';
-    else if (diagramContent.startsWith('sequenceDiagram')) type = 'sequence';
-    else if (diagramContent.startsWith('pie')) type = 'pie';
-    
-    diagrams.unshift({
-      type,
-      format: 'mermaid',
-      content: diagramContent,
-      title: type === 'gantt' ? 'Timeline' : `Diagram`
-    });
-  }
-  
-  // Remove inline mermaid from content
-  cleanContent = cleanContent.replace(inlineMermaidPattern, '\n\n');
   
   // Clean up multiple newlines
   cleanContent = cleanContent.replace(/\n{3,}/g, '\n\n').trim();
