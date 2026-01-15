@@ -22,6 +22,7 @@ import { DocumentCallModal } from "@/components/dave/DocumentCallModal";
 import { VoiceCallPanel } from "@/components/dave/VoiceCallPanel";
 import { DiagramRenderer } from "@/components/dave/DiagramRenderer";
 import { ConversationSidebar } from "@/components/dave/ConversationSidebar";
+import { ProposalActions } from "@/components/dave/ProposalActions";
 import { Contact, type DiagramData } from "@/lib/api";
 import { Loader2, BarChart3, PanelLeftClose, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,10 @@ export default function Chat() {
   
   // Generated diagrams for display
   const [proposalDiagrams, setProposalDiagrams] = useState<DiagramData[]>();
+  
+  // Store proposal ID for download/share actions
+  const [lastProposalId, setLastProposalId] = useState<string | null>(null);
+  const [lastProposalContactName, setLastProposalContactName] = useState<string>('');
 
   // Load conversations on mount and when messages change
   useEffect(() => {
