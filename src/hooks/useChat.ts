@@ -3,7 +3,34 @@ import { ChatMessage as APIChatMessage, chat, ExtractionProgress } from "@/lib/a
 import { toast } from "@/hooks/use-toast";
 
 const STORAGE_KEY = 'dave-conversations';
+const CHAT_STORAGE_KEY = 'dave-current-chat';
 const MAX_CONVERSATIONS = 20;
+
+// Save current chat to localStorage
+const saveToStorage = (messages: ChatMessage[]) => {
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+  } catch (e) {
+    console.error('Failed to save chat:', e);
+  }
+};
+
+// Load current chat from localStorage
+const loadFromStorage = (): ChatMessage[] => {
+  try {
+    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.map((m: ChatMessage) => ({
+        ...m,
+        timestamp: new Date(m.timestamp)
+      }));
+    }
+  } catch (e) {
+    console.error('Failed to load chat:', e);
+  }
+  return [];
+};
 
 export type LoadingPhase = 'idle' | 'thinking' | 'working' | 'streaming';
 
@@ -67,14 +94,20 @@ function escapeRegex(str: string): string {
 }
 
 export function useChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: "Good morning, Dave. How can I help you today?",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const saved = loadFromStorage();
+    if (saved.length > 0) {
+      return saved;
+    }
+    return [
+      {
+        id: "welcome",
+        role: "assistant",
+        content: "Good morning, Dave. How can I help you today?",
+        timestamp: new Date(),
+      },
+    ];
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>('idle');
   const [workingMessageIndex, setWorkingMessageIndex] = useState(0);
@@ -351,6 +384,11 @@ export function useChat() {
       saveConversation();
     }
   }, [messages, isLoading, saveConversation]);
+
+  // Save current chat to localStorage on every message change
+  useEffect(() => {
+    saveToStorage(messages);
+  }, [messages]);
 
   return {
     messages,
