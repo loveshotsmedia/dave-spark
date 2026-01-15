@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -23,6 +23,8 @@ import {
   ArrowLeft,
   Edit,
   Eye,
+  FileUp,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +49,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   listContent,
   searchContent,
@@ -61,6 +64,19 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
+
+// Supabase storage URL for the external backend
+const SUPABASE_URL = "https://icopqfohbrdsdqgpajdy.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljb3BxZm9oYnJkc2RxZ3BhamR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2NTcxNzAsImV4cCI6MjA1MzIzMzE3MH0.2SjkOJF5_1TkKBBJ3cWToMB1LhPHVOMfjBuQigRlDKE";
+
+// Helper to get public URL for stored files
+function getStorageUrl(filePath: string): string {
+  if (!filePath) return "";
+  // If it's already a full URL, return as-is
+  if (filePath.startsWith("http")) return filePath;
+  // Build the public storage URL
+  return `${SUPABASE_URL}/storage/v1/object/public/${filePath}`;
+}
 
 const CONTENT_TYPE_ICONS: Record<string, React.ReactNode> = {
   video: <Video className="h-5 w-5" />,
@@ -101,13 +117,17 @@ export default function ContentLibraryPage() {
 
   // Upload modal state
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
   const [uploadForm, setUploadForm] = useState<Partial<ContentUploadRequest>>({
-    content_type: "video",
+    content_type: "document",
     audience: "client",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [tagsInput, setTagsInput] = useState("");
   const [keywordsInput, setKeywordsInput] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Send to client modal state
   const [sendModalOpen, setSendModalOpen] = useState(false);
@@ -181,6 +201,48 @@ export default function ContentLibraryPage() {
     return () => clearTimeout(debounce);
   }, [contactSearch]);
 
+  // File handling
+  const handleFileSelect = useCallback((file: File) => {
+    setSelectedFile(file);
+    
+    // Auto-detect content type from file
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    let contentType: ContentUploadRequest["content_type"] = "document";
+    if (ext === 'pdf' || ext === 'doc' || ext === 'docx') contentType = "document";
+    else if (ext === 'ppt' || ext === 'pptx') contentType = "presentation";
+    else if (ext === 'xls' || ext === 'xlsx' || ext === 'csv') contentType = "spreadsheet";
+    else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) contentType = "image";
+    else if (['mp4', 'mov', 'avi', 'webm'].includes(ext || '')) contentType = "video";
+    
+    setUploadForm(prev => ({
+      ...prev,
+      content_type: contentType,
+      title: prev.title || file.name.replace(/\.[^/.]+$/, ''), // Use filename as title if empty
+    }));
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  }, [handleFileSelect]);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileSelect(file);
+  }, [handleFileSelect]);
+
   const handleUpload = async () => {
     if (!uploadForm.title?.trim()) {
       toast({
@@ -191,10 +253,20 @@ export default function ContentLibraryPage() {
       return;
     }
 
-    if (!uploadForm.url?.trim() && !uploadForm.file_content) {
+    // Check for either file or URL
+    if (uploadMode === "file" && !selectedFile) {
       toast({
-        title: "Missing content",
-        description: "Please enter a URL or upload a file",
+        title: "Missing file",
+        description: "Please select a file to upload",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (uploadMode === "url" && !uploadForm.url?.trim()) {
+      toast({
+        title: "Missing URL",
+        description: "Please enter a URL",
         variant: "destructive",
       });
       return;
@@ -205,20 +277,42 @@ export default function ContentLibraryPage() {
       const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
       const keywords = keywordsInput.split(",").map((t) => t.trim()).filter(Boolean);
 
-      await uploadContent({
+      let uploadData: ContentUploadRequest = {
         ...uploadForm,
         tags: tags.length > 0 ? tags : undefined,
         topic_keywords: keywords.length > 0 ? keywords : undefined,
-      } as ContentUploadRequest);
+      } as ContentUploadRequest;
+
+      // If file upload, convert to base64
+      if (uploadMode === "file" && selectedFile) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            // Remove data URL prefix (e.g., "data:application/pdf;base64,")
+            const base64Data = result.split(',')[1];
+            resolve(base64Data);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedFile);
+        });
+
+        uploadData.file_content = base64;
+        uploadData.file_name = selectedFile.name;
+      }
+
+      await uploadContent(uploadData);
 
       toast({
         title: "Content uploaded",
         description: "Your content has been added to the library",
       });
       setIsUploadOpen(false);
-      setUploadForm({ content_type: "video", audience: "client" });
+      setUploadForm({ content_type: "document", audience: "client" });
+      setSelectedFile(null);
       setTagsInput("");
       setKeywordsInput("");
+      setUploadMode("file");
       // Refresh list
       const result = await listContent({ limit: 100 });
       setContent(result.content || []);
@@ -649,6 +743,93 @@ export default function ContentLibraryPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* Upload Mode Tabs */}
+            <Tabs value={uploadMode} onValueChange={(v) => setUploadMode(v as "file" | "url")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="file" className="flex items-center gap-2">
+                  <FileUp className="h-4 w-4" />
+                  Upload File
+                </TabsTrigger>
+                <TabsTrigger value="url" className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4" />
+                  Link URL
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="file" className="mt-4">
+                {/* File Drop Zone */}
+                <div
+                  className={`relative rounded-lg border-2 border-dashed p-8 transition-all cursor-pointer ${
+                    isDragging
+                      ? "border-primary bg-primary/5"
+                      : selectedFile
+                      ? "border-green-500 bg-green-50 dark:bg-green-900/10"
+                      : "border-muted-foreground/25 hover:border-primary/50"
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.mp4,.mov"
+                    onChange={handleFileInputChange}
+                  />
+                  
+                  {selectedFile ? (
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <CheckCircle2 className="h-10 w-10 text-green-500" />
+                      <div>
+                        <p className="font-medium text-foreground">{selectedFile.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFile(null);
+                        }}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <FileUp className="h-10 w-10 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium text-foreground">
+                          Drop your file here or click to browse
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          PDF, Word, PowerPoint, Excel, Images, Videos
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="url" className="mt-4 space-y-2">
+                <Label htmlFor="url">URL (YouTube, Vimeo, web articles, etc.)</Label>
+                <Input
+                  id="url"
+                  placeholder="https://youtube.com/watch?v=... or https://..."
+                  value={uploadForm.url || ""}
+                  onChange={(e) =>
+                    setUploadForm({ ...uploadForm, url: e.target.value })
+                  }
+                />
+              </TabsContent>
+            </Tabs>
+
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
               <Input
@@ -663,7 +844,7 @@ export default function ContentLibraryPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Content Type *</Label>
+                <Label>Content Type</Label>
                 <Select
                   value={uploadForm.content_type}
                   onValueChange={(v) =>
@@ -677,13 +858,13 @@ export default function ContentLibraryPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="document">Document</SelectItem>
+                    <SelectItem value="proposal">Proposal</SelectItem>
                     <SelectItem value="video">Video</SelectItem>
                     <SelectItem value="article">Article</SelectItem>
-                    <SelectItem value="document">Document</SelectItem>
                     <SelectItem value="presentation">Presentation</SelectItem>
                     <SelectItem value="spreadsheet">Spreadsheet</SelectItem>
                     <SelectItem value="image">Image</SelectItem>
-                    <SelectItem value="proposal">Proposal</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -717,23 +898,11 @@ export default function ContentLibraryPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="url">URL (YouTube, Vimeo, web articles, etc.)</Label>
-              <Input
-                id="url"
-                placeholder="https://youtube.com/watch?v=... or https://..."
-                value={uploadForm.url || ""}
-                onChange={(e) =>
-                  setUploadForm({ ...uploadForm, url: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
                 placeholder="Brief description of this content..."
-                rows={3}
+                rows={2}
                 value={uploadForm.description || ""}
                 onChange={(e) =>
                   setUploadForm({ ...uploadForm, description: e.target.value })
@@ -753,14 +922,13 @@ export default function ContentLibraryPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="keywords">Topic Keywords (comma-separated)</Label>
+                <Label htmlFor="keywords">Topic Keywords</Label>
                 <Input
                   id="keywords"
                   placeholder="estate freeze, capital gains"
                   value={keywordsInput}
                   onChange={(e) => setKeywordsInput(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">Used for AI matching</p>
               </div>
             </div>
           </div>
@@ -1074,15 +1242,57 @@ export default function ContentLibraryPage() {
               </div>
             )}
 
-            {/* File Path */}
+            {/* Document Preview (PDFs, etc.) */}
             {previewContent?.file_path && (
-              <div className="space-y-2">
-                <Label>File Location</Label>
-                <Input
-                  value={previewContent.file_path}
-                  readOnly
-                  className="font-mono text-sm"
-                />
+              <div className="space-y-3">
+                <Label>Document Preview</Label>
+                {(() => {
+                  const fileUrl = getStorageUrl(previewContent.file_path);
+                  const ext = previewContent.file_path.split('.').pop()?.toLowerCase();
+                  
+                  // PDF embed
+                  if (ext === 'pdf') {
+                    return (
+                      <div className="rounded-lg overflow-hidden border bg-muted">
+                        <iframe
+                          src={`${fileUrl}#toolbar=1&navpanes=0`}
+                          className="w-full h-[500px]"
+                          title={previewContent.title}
+                        />
+                      </div>
+                    );
+                  }
+                  
+                  // Image preview
+                  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+                    return (
+                      <div className="rounded-lg overflow-hidden border bg-muted p-4">
+                        <img
+                          src={fileUrl}
+                          alt={previewContent.title}
+                          className="max-w-full max-h-[500px] mx-auto object-contain"
+                        />
+                      </div>
+                    );
+                  }
+                  
+                  // Fallback for other file types
+                  return (
+                    <div className="rounded-lg border bg-muted/50 p-6 text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Preview not available for this file type
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open(fileUrl, "_blank")}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Download / Open File
+                      </Button>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
