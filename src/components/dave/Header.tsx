@@ -1,4 +1,4 @@
-import { Settings, LogOut, Users, FolderOpen, Mail, BookOpen, Briefcase } from "lucide-react";
+import { Settings, LogOut, Users, FolderOpen, Mail, BookOpen, Briefcase, Inbox } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -82,6 +82,15 @@ export function Header({ onLogout, onSettingsClick }: HeaderProps) {
             <Mail className="h-4 w-4 mr-2" />
             Campaigns
           </Button>
+          <Button
+            variant={isActive("/inbox") ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => navigate("/inbox")}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Inbox className="h-4 w-4 mr-2" />
+            Inbox
+          </Button>
         </nav>
       </div>
 
@@ -136,6 +145,10 @@ export function Header({ onLogout, onSettingsClick }: HeaderProps) {
             <DropdownMenuItem onClick={() => navigate("/campaigns")} className="md:hidden">
               <Mail className="mr-2 h-4 w-4" />
               Campaigns
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/inbox")} className="md:hidden">
+              <Inbox className="mr-2 h-4 w-4" />
+              Inbox
             </DropdownMenuItem>
             <DropdownMenuSeparator className="md:hidden" />
             <DropdownMenuItem onClick={onLogout} className="text-destructive">
