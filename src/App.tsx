@@ -1,6 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { SafeTooltipProvider } from "@/components/ui/SafeTooltipProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Meteors } from "@/components/effects/MeteorBackground";
@@ -22,7 +22,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+    <SafeTooltipProvider>
       <Toaster />
       <Sonner />
       {/* Global Meteor Background */}
@@ -49,7 +49,7 @@ const App = () => (
           </Routes>
         </div>
       </BrowserRouter>
-    </TooltipProvider>
+    </SafeTooltipProvider>
   </QueryClientProvider>
 );
 
