@@ -20,11 +20,24 @@ interface DiagramRendererProps {
 export function DiagramRenderer({ diagram }: DiagramRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(`mermaid-${Math.random().toString(36).substring(7)}`);
+  const mermaidInitRef = useRef(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasRenderError, setHasRenderError] = useState(false);
 
   useEffect(() => {
-    if (diagram.format === 'mermaid' && containerRef.current) {
-      // Initialize Mermaid with professional styling
+    if (diagram.format !== 'mermaid') return;
+
+    const container = containerRef.current;
+    const source = (diagram.content ?? '').trim();
+
+    // Nothing to render => clear any previous SVG and bail.
+    if (!container || !source) {
+      if (container) container.innerHTML = '';
+      return;
+    }
+
+    // Initialize Mermaid once per component instance.
+    if (!mermaidInitRef.current) {
       mermaid.initialize({
         startOnLoad: false,
         theme: 'base',
@@ -34,29 +47,29 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
           primaryColor: '#0EA5E9',
           primaryTextColor: '#FFFFFF',
           primaryBorderColor: '#0284C7',
-          
+
           secondaryColor: '#8B5CF6',
           secondaryTextColor: '#FFFFFF',
           secondaryBorderColor: '#7C3AED',
-          
+
           tertiaryColor: '#10B981',
           tertiaryTextColor: '#FFFFFF',
           tertiaryBorderColor: '#059669',
-          
+
           // Node styling
           nodeBorder: '#374151',
           nodeTextColor: '#F9FAFB',
-          
+
           // Line styling
           lineColor: '#6B7280',
-          
+
           // Background
           background: '#18181B',
           mainBkg: '#27272A',
-          
+
           // Font
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-          fontSize: '14px'
+          fontSize: '14px',
         },
         flowchart: {
           htmlLabels: true,
@@ -65,7 +78,7 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
           nodeSpacing: 50,
           rankSpacing: 80,
           diagramPadding: 30,
-          useMaxWidth: true
+          useMaxWidth: true,
         },
         gantt: {
           titleTopMargin: 25,
@@ -75,49 +88,63 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
           gridLineStartPadding: 35,
           fontSize: 12,
           numberSectionStyles: 4,
-          useMaxWidth: true
-        }
+          useMaxWidth: true,
+        },
       });
 
-      // Render the diagram
-      const render = async () => {
-        try {
-          setIsLoaded(false);
-          const { svg } = await mermaid.render(idRef.current, diagram.content);
-          if (containerRef.current) {
-            containerRef.current.innerHTML = svg;
-            
-            // Trigger animations after render
-            setTimeout(() => {
-              setIsLoaded(true);
-              
-              // Animate nodes sequentially
-              const nodes = containerRef.current?.querySelectorAll('.node');
-              nodes?.forEach((node, index) => {
-                setTimeout(() => {
-                  (node as HTMLElement).classList.add('animate-in');
-                }, index * 100);
-              });
-
-              // Animate edges after nodes
-              const edges = containerRef.current?.querySelectorAll('.edgePath');
-              edges?.forEach((edge, index) => {
-                setTimeout(() => {
-                  (edge as HTMLElement).classList.add('animate-in');
-                }, ((nodes?.length || 0) * 100) + (index * 50));
-              });
-            }, 100);
-          }
-        } catch (error) {
-          console.error('Mermaid render error:', error);
-          if (containerRef.current) {
-            containerRef.current.innerHTML = '<p class="text-destructive">Failed to render diagram</p>';
-          }
-        }
-      };
-
-      render();
+      mermaidInitRef.current = true;
     }
+
+    const render = async () => {
+      try {
+        setHasRenderError(false);
+        setIsLoaded(false);
+        container.innerHTML = '';
+
+        // Validate first to avoid Mermaid's big "Syntax error" SVG output.
+        const parseFn = (mermaid as any).parse;
+        if (typeof parseFn === 'function') {
+          await Promise.resolve(parseFn(source));
+        }
+
+        const { svg } = await mermaid.render(idRef.current, source);
+
+        // Mermaid sometimes returns an "error" SVG instead of throwing.
+        if (/Syntax error in text|No diagram type detected|UnknownDiagramError/i.test(svg)) {
+          throw new Error('Mermaid syntax error');
+        }
+
+        container.innerHTML = svg;
+
+        // Trigger animations after render
+        setTimeout(() => {
+          setIsLoaded(true);
+
+          // Animate nodes sequentially
+          const nodes = container.querySelectorAll('.node');
+          nodes.forEach((node, index) => {
+            setTimeout(() => {
+              (node as HTMLElement).classList.add('animate-in');
+            }, index * 100);
+          });
+
+          // Animate edges after nodes
+          const edges = container.querySelectorAll('.edgePath');
+          edges.forEach((edge, index) => {
+            setTimeout(() => {
+              (edge as HTMLElement).classList.add('animate-in');
+            }, (nodes.length * 100) + (index * 50));
+          });
+        }, 100);
+      } catch (error) {
+        setHasRenderError(true);
+        setIsLoaded(false);
+        container.innerHTML = '';
+        console.warn('Mermaid render error:', error);
+      }
+    };
+
+    render();
   }, [diagram.content, diagram.format]);
 
   const handleDownloadSVG = () => {
