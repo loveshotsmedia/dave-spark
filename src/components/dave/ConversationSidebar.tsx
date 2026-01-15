@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Plus, Trash2, Clock } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, Clock, RotateCcw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface SavedConversation {
@@ -16,6 +16,7 @@ interface ConversationSidebarProps {
   onLoadConversation: (id: string) => void;
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
+  onClearChat?: () => void;
 }
 
 export function ConversationSidebar({
@@ -24,10 +25,11 @@ export function ConversationSidebar({
   onLoadConversation,
   onNewConversation,
   onDeleteConversation,
+  onClearChat,
 }: ConversationSidebarProps) {
   return (
     <div className="flex h-full w-64 flex-col border-r border-zinc-800 bg-zinc-950">
-      <div className="border-b border-zinc-800 p-3">
+      <div className="border-b border-zinc-800 p-3 space-y-2">
         <Button
           onClick={onNewConversation}
           variant="outline"
@@ -36,6 +38,16 @@ export function ConversationSidebar({
           <Plus className="h-4 w-4" />
           New Conversation
         </Button>
+        {onClearChat && (
+          <Button
+            onClick={onClearChat}
+            variant="ghost"
+            className="w-full justify-start gap-2 text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Clear Chat & History
+          </Button>
+        )}
       </div>
 
       <ScrollArea className="flex-1">

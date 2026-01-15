@@ -312,6 +312,15 @@ export function useChat() {
     ]);
   }, []);
 
+  const clearChatAndStorage = useCallback(() => {
+    // Clear the current chat from localStorage
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+    // Reset messages to welcome only
+    clearMessages();
+    // Start a fresh conversation
+    setConversationId(`conv-${Date.now()}`);
+  }, [clearMessages]);
+
   const saveConversation = useCallback(() => {
     if (messages.length <= 1) return; // Don't save if only welcome message
 
@@ -395,6 +404,7 @@ export function useChat() {
     isLoading,
     sendMessage,
     clearMessages,
+    clearChatAndStorage,
     conversationId,
     loadConversation,
     startNewConversation,
