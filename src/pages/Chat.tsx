@@ -124,10 +124,14 @@ export default function Chat() {
     setIsProposalOpen(true);
   };
 
-  const handleProposalGenerated = (proposal: string, contactName: string, diagrams?: DiagramData[]) => {
+  const handleProposalGenerated = (proposal: string, contactName: string, diagrams?: DiagramData[], proposalId?: string) => {
     sendMessage(`Generated proposal for ${contactName}:\n\n${proposal}`, undefined);
     if (diagrams && diagrams.length > 0) {
       setProposalDiagrams(diagrams);
+    }
+    if (proposalId) {
+      setLastProposalId(proposalId);
+      setLastProposalContactName(contactName);
     }
   };
 
