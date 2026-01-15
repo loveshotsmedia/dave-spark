@@ -628,6 +628,7 @@ export interface ProposalRequest {
   additionalContext?: string;
   sendEmail?: boolean;
   emailTo?: string;
+  systemPrompt?: string; // Canonical structure prompt
 }
 
 export interface DiagramData {

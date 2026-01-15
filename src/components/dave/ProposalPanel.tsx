@@ -27,6 +27,7 @@ import {
 } from "@/lib/api";
 import { ContactCard } from "./ContactCard";
 import { toast } from "@/hooks/use-toast";
+import { PROPOSAL_SYSTEM_PROMPT, cleanProposalContent } from "@/lib/proposalSystemPrompt";
 
 // Helper to detect if client needs succession planning
 function detectSuccessionNeeds(clientFile: ClientFile | null, proposalType: string): boolean {
@@ -140,14 +141,18 @@ export function ProposalPanel({
         "Wealth Transfer": "estate_freeze",
       };
 
-      // Use the proper generateProposal API endpoint
+      // Use the proper generateProposal API endpoint with canonical structure
       const result = await generateProposal({
         contactId: selectedContact.id,
         clientName: selectedContact.full_name,
         clientDetails: clientDetails || `Contact for ${proposalType}`,
         proposalType: proposalTypeMap[proposalType] || "general",
         additionalContext,
+        systemPrompt: PROPOSAL_SYSTEM_PROMPT,
       });
+
+      // Clean the proposal content to remove any forbidden technical content
+      const cleanedProposal = cleanProposalContent(result.proposal);
 
       // Generate diagrams based on client data
       const diagrams: DiagramData[] = result.diagrams || [];
@@ -233,7 +238,7 @@ export function ProposalPanel({
         tags: [proposalType.toLowerCase().replace(/ /g, '_'), 'proposal', 'generated'],
         topic_keywords: [proposalType.toLowerCase()],
         audience: "client",
-        file_content: result.proposal, // Store the proposal text
+        file_content: cleanedProposal, // Store the cleaned proposal text
       });
 
       toast({
@@ -241,7 +246,7 @@ export function ProposalPanel({
         description: `Proposal saved to Content Library for ${selectedContact.full_name}`,
       });
 
-      onProposalGenerated(result.proposal, selectedContact.full_name, diagrams);
+      onProposalGenerated(cleanedProposal, selectedContact.full_name, diagrams);
       onClose();
       resetForm();
     } catch (error) {
