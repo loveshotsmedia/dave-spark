@@ -119,17 +119,22 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
         setIsLoaded(false);
         container.innerHTML = '';
 
-        // Validate first to avoid Mermaid's big "Syntax error" SVG output.
-        const parseFn = (mermaid as any).parse;
-        if (typeof parseFn === 'function') {
-          await Promise.resolve(parseFn(source));
+        // Pre-validate syntax before rendering to catch errors early
+        try {
+          const parseResult = await mermaid.parse(source, { suppressErrors: true });
+          if (!parseResult) {
+            throw new Error('Invalid mermaid syntax');
+          }
+        } catch (parseError) {
+          console.warn('Mermaid parse validation failed:', parseError);
+          throw new Error('Mermaid syntax error');
         }
 
         const { svg } = await mermaid.render(idRef.current, source);
 
-        // Mermaid sometimes returns an "error" SVG instead of throwing.
-        if (/Syntax error in text|No diagram type detected|UnknownDiagramError/i.test(svg)) {
-          throw new Error('Mermaid syntax error');
+        // Double-check: Mermaid sometimes returns an "error" SVG instead of throwing
+        if (!svg || /Syntax error|Error|No diagram type detected|UnknownDiagramError|Parse error/i.test(svg)) {
+          throw new Error('Mermaid render error');
         }
 
         container.innerHTML = svg;
@@ -158,7 +163,7 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
         setHasRenderError(true);
         setIsLoaded(false);
         container.innerHTML = '';
-        console.warn('Mermaid render error:', error);
+        // Silently fail - don't show error to user
       }
     };
 

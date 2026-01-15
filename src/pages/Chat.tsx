@@ -22,6 +22,7 @@ import { DocumentCallModal } from "@/components/dave/DocumentCallModal";
 import { VoiceCallPanel } from "@/components/dave/VoiceCallPanel";
 import { DiagramRenderer } from "@/components/dave/DiagramRenderer";
 import { ConversationSidebar } from "@/components/dave/ConversationSidebar";
+import { ProposalActions } from "@/components/dave/ProposalActions";
 import { Contact, type DiagramData } from "@/lib/api";
 import { Loader2, BarChart3, PanelLeftClose, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,10 @@ export default function Chat() {
   
   // Generated diagrams for display
   const [proposalDiagrams, setProposalDiagrams] = useState<DiagramData[]>();
+  
+  // Store proposal ID for download/share actions
+  const [lastProposalId, setLastProposalId] = useState<string | null>(null);
+  const [lastProposalContactName, setLastProposalContactName] = useState<string>('');
 
   // Load conversations on mount and when messages change
   useEffect(() => {
@@ -119,10 +124,14 @@ export default function Chat() {
     setIsProposalOpen(true);
   };
 
-  const handleProposalGenerated = (proposal: string, contactName: string, diagrams?: DiagramData[]) => {
+  const handleProposalGenerated = (proposal: string, contactName: string, diagrams?: DiagramData[], proposalId?: string) => {
     sendMessage(`Generated proposal for ${contactName}:\n\n${proposal}`, undefined);
     if (diagrams && diagrams.length > 0) {
       setProposalDiagrams(diagrams);
+    }
+    if (proposalId) {
+      setLastProposalId(proposalId);
+      setLastProposalContactName(contactName);
     }
   };
 
@@ -209,6 +218,14 @@ export default function Chat() {
                 />
               ))}
               
+              {/* Proposal Actions - Download/Send */}
+              {lastProposalId && (
+                <ProposalActions 
+                  proposalId={lastProposalId} 
+                  contactName={lastProposalContactName}
+                />
+              )}
+              
               {/* Proposal Diagrams Section */}
               {proposalDiagrams && proposalDiagrams.length > 0 && (
                 <div className="space-y-3 pt-3 border-t border-zinc-800">
@@ -216,7 +233,11 @@ export default function Chat() {
                     <BarChart3 className="h-3.5 w-3.5" strokeWidth={1.5} />
                     <span>Diagrams</span>
                     <button 
-                      onClick={() => setProposalDiagrams([])}
+                      onClick={() => {
+                        setProposalDiagrams([]);
+                        setLastProposalId(null);
+                        setLastProposalContactName('');
+                      }}
                       className="ml-auto text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-200"
                     >
                       Clear

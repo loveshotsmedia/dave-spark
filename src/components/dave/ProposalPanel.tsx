@@ -82,7 +82,7 @@ interface ProposalPanelProps {
   isOpen: boolean;
   onClose: () => void;
   preselectedContactId?: string;
-  onProposalGenerated: (proposal: string, contactName: string, diagrams?: DiagramData[]) => void;
+  onProposalGenerated: (proposal: string, contactName: string, diagrams?: DiagramData[], proposalId?: string) => void;
 }
 
 export function ProposalPanel({
@@ -255,7 +255,7 @@ export function ProposalPanel({
         duration: 5000,
       });
 
-      onProposalGenerated(cleanedProposal, selectedContact.full_name, diagrams);
+      onProposalGenerated(cleanedProposal, selectedContact.full_name, diagrams, uploadResult?.id);
       onClose();
       resetForm();
     } catch (error) {
