@@ -22,6 +22,7 @@ import {
   Users,
   ArrowLeft,
   Edit,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,6 +119,10 @@ export default function ContentLibraryPage() {
   const [isSending, setIsSending] = useState(false);
   const [isSearchingContacts, setIsSearchingContacts] = useState(false);
   const [sendVia, setSendVia] = useState<"sms" | "email">("sms");
+
+  // Preview modal state
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState<ContentItem | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -254,6 +259,11 @@ export default function ContentLibraryPage() {
     setSmsMessage("");
     setSendVia("sms");
     setSendModalOpen(true);
+  };
+
+  const openPreview = (item: ContentItem) => {
+    setPreviewContent(item);
+    setPreviewModalOpen(true);
   };
 
   const handleSend = async () => {
@@ -445,7 +455,8 @@ export default function ContentLibraryPage() {
             {filteredContent.map((item) => (
               <div
                 key={item.id}
-                className="group rounded-xl border bg-card p-4 transition-all hover:shadow-lg hover:border-primary/20"
+                className="group rounded-xl border bg-card p-4 transition-all hover:shadow-lg hover:border-primary/20 cursor-pointer"
+                onClick={() => openPreview(item)}
               >
                 {/* Type Icon & Badge */}
                 <div className="flex items-start justify-between mb-3">
@@ -460,7 +471,10 @@ export default function ContentLibraryPage() {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8"
-                        onClick={() => window.open(item.url, "_blank")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(item.url, "_blank");
+                        }}
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Button>
@@ -469,7 +483,10 @@ export default function ContentLibraryPage() {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 text-primary"
-                      onClick={() => openSendModal(item)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openSendModal(item);
+                      }}
                     >
                       <Send className="h-4 w-4" />
                     </Button>
@@ -477,7 +494,10 @@ export default function ContentLibraryPage() {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 text-destructive"
-                      onClick={() => handleDelete(item)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(item);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -534,7 +554,8 @@ export default function ContentLibraryPage() {
             {filteredContent.map((item) => (
               <div
                 key={item.id}
-                className="group flex items-center gap-4 rounded-lg border bg-card p-4 transition-all hover:shadow-md hover:border-primary/20"
+                className="group flex items-center gap-4 rounded-lg border bg-card p-4 transition-all hover:shadow-md hover:border-primary/20 cursor-pointer"
+                onClick={() => openPreview(item)}
               >
                 {/* Type Icon */}
                 <div
@@ -577,7 +598,10 @@ export default function ContentLibraryPage() {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8"
-                      onClick={() => window.open(item.url, "_blank")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(item.url, "_blank");
+                      }}
                     >
                       <ExternalLink className="h-4 w-4" />
                     </Button>
@@ -586,7 +610,10 @@ export default function ContentLibraryPage() {
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 text-primary"
-                    onClick={() => openSendModal(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openSendModal(item);
+                    }}
                   >
                     <Send className="h-4 w-4" />
                   </Button>
@@ -594,7 +621,10 @@ export default function ContentLibraryPage() {
                     size="icon"
                     variant="ghost"
                     className="h-8 w-8 text-destructive"
-                    onClick={() => handleDelete(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item);
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -911,6 +941,188 @@ export default function ContentLibraryPage() {
                 </>
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview Modal */}
+      <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              {previewContent && (
+                <div
+                  className={`rounded-lg p-2 ${CONTENT_TYPE_COLORS[previewContent.content_type] || "bg-muted text-muted-foreground"}`}
+                >
+                  {CONTENT_TYPE_ICONS[previewContent.content_type] || <File className="h-5 w-5" />}
+                </div>
+              )}
+              <span className="truncate">{previewContent?.title}</span>
+            </DialogTitle>
+            <DialogDescription>
+              {previewContent?.description || "No description available"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Metadata Badges */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="capitalize">
+                {previewContent?.content_type}
+              </Badge>
+              {previewContent?.audience && (
+                <Badge className={`capitalize ${AUDIENCE_COLORS[previewContent.audience]}`}>
+                  {previewContent.audience}
+                </Badge>
+              )}
+              {previewContent?.tags?.map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  <Tag className="h-3 w-3 mr-1" />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+
+            {/* URL Preview */}
+            {previewContent?.url && (
+              <div className="space-y-3">
+                <Label>External Link</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={previewContent.url}
+                    readOnly
+                    className="flex-1 font-mono text-sm"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => window.open(previewContent.url, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Video Embed */}
+                {previewContent.content_type === "video" && (
+                  <div className="aspect-video rounded-lg overflow-hidden bg-muted mt-4">
+                    {(() => {
+                      // YouTube
+                      if (previewContent.url.includes("youtube.com") || previewContent.url.includes("youtu.be")) {
+                        let videoId = "";
+                        try {
+                          if (previewContent.url.includes("youtu.be/")) {
+                            videoId = previewContent.url.split("youtu.be/")[1].split(/[?&]/)[0];
+                          } else if (previewContent.url.includes("youtube.com/watch")) {
+                            const urlObj = new URL(previewContent.url);
+                            videoId = urlObj.searchParams.get("v") || "";
+                          } else if (previewContent.url.includes("youtube.com/embed/")) {
+                            videoId = previewContent.url.split("youtube.com/embed/")[1].split(/[?&]/)[0];
+                          }
+                        } catch (e) {
+                          console.error("Failed to parse YouTube URL:", e);
+                        }
+
+                        if (videoId) {
+                          return (
+                            <iframe
+                              src={`https://www.youtube.com/embed/${videoId}`}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          );
+                        }
+                      } else if (previewContent.url.includes("vimeo.com")) {
+                        // Vimeo
+                        let videoId = "";
+                        try {
+                          videoId = previewContent.url.split("vimeo.com/")[1].split(/[?&]/)[0];
+                        } catch (e) {
+                          console.error("Failed to parse Vimeo URL:", e);
+                        }
+
+                        if (videoId) {
+                          return (
+                            <iframe
+                              src={`https://player.vimeo.com/video/${videoId}`}
+                              className="w-full h-full"
+                              allow="autoplay; fullscreen; picture-in-picture"
+                              allowFullScreen
+                            />
+                          );
+                        }
+                      }
+
+                      // Fallback
+                      return (
+                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-4">
+                          <Video className="h-12 w-12" />
+                          <p className="text-sm">Video preview not available</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(previewContent.url, "_blank")}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Open in New Tab
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* File Path */}
+            {previewContent?.file_path && (
+              <div className="space-y-2">
+                <Label>File Location</Label>
+                <Input
+                  value={previewContent.file_path}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+              </div>
+            )}
+
+            {/* Created Date */}
+            <div className="pt-4 border-t">
+              <Label className="text-xs text-muted-foreground">Created</Label>
+              <p className="text-sm">
+                {previewContent?.created_at
+                  ? format(new Date(previewContent.created_at), "MMMM d, yyyy 'at' h:mm a")
+                  : "Unknown"}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setPreviewModalOpen(false)}>
+              Close
+            </Button>
+            {previewContent && (
+              <>
+                <Button
+                  onClick={() => {
+                    setPreviewModalOpen(false);
+                    openSendModal(previewContent);
+                  }}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Send to Client
+                </Button>
+                {previewContent.url && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => window.open(previewContent.url, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open Link
+                  </Button>
+                )}
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
