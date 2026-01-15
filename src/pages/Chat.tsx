@@ -70,9 +70,11 @@ export default function Chat() {
   }, [messages]);
 
   // Handle pre-filled message from URL query parameter
+  const prefillHandledRef = useRef(false);
   useEffect(() => {
     const prefillMessage = searchParams.get("message");
-    if (prefillMessage && !authLoading && isAuthenticated) {
+    if (prefillMessage && !authLoading && isAuthenticated && !prefillHandledRef.current) {
+      prefillHandledRef.current = true;
       sendMessage(prefillMessage);
       // Clear the query parameter
       setSearchParams({});
