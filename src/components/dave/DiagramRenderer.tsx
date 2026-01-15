@@ -43,29 +43,29 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
         theme: 'base',
         securityLevel: 'loose',
         themeVariables: {
-          // Professional light color scheme for better readability
+          // Professional color scheme with WHITE text on colored backgrounds
           primaryColor: '#0EA5E9',
-          primaryTextColor: '#1F2937',
+          primaryTextColor: '#FFFFFF',
           primaryBorderColor: '#0284C7',
 
           secondaryColor: '#8B5CF6',
-          secondaryTextColor: '#1F2937',
+          secondaryTextColor: '#FFFFFF',
           secondaryBorderColor: '#7C3AED',
 
           tertiaryColor: '#10B981',
-          tertiaryTextColor: '#1F2937',
+          tertiaryTextColor: '#FFFFFF',
           tertiaryBorderColor: '#059669',
 
-          // Node styling - lighter backgrounds for contrast
-          nodeBorder: '#374151',
+          // Node styling
+          nodeBorder: '#E5E7EB',
           nodeTextColor: '#1F2937',
 
-          // Line styling - visible on light/dark
+          // Line styling
           lineColor: '#6B7280',
 
-          // Light background for better visibility
+          // Light background
           background: '#FFFFFF',
-          mainBkg: '#F3F4F6',
+          mainBkg: '#F9FAFB',
 
           // Gantt specific
           sectionBkgColor: '#F3F4F6',
@@ -85,28 +85,28 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
 
           // Font
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-          fontSize: '13px',
+          fontSize: '14px',
         },
         flowchart: {
           htmlLabels: true,
           curve: 'basis',
-          padding: 15,
-          nodeSpacing: 60,
-          rankSpacing: 60,
-          diagramPadding: 20,
-          useMaxWidth: false,
+          padding: 20,
+          nodeSpacing: 50,
+          rankSpacing: 80,
+          diagramPadding: 30,
+          useMaxWidth: true,
         },
         gantt: {
           titleTopMargin: 25,
-          barHeight: 30,
-          barGap: 6,
-          topPadding: 60,
+          barHeight: 40,
+          barGap: 8,
+          topPadding: 75,
           leftPadding: 120,
           gridLineStartPadding: 35,
           fontSize: 12,
           sectionFontSize: 14,
           numberSectionStyles: 4,
-          useMaxWidth: false,
+          useMaxWidth: true,
         },
       });
 
@@ -231,8 +231,10 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
         {diagram.format === 'mermaid' && (
           <div 
             ref={containerRef} 
-            className="diagram-container flex justify-center items-center overflow-auto rounded-xl bg-white p-8 min-h-[300px] shadow-inner"
+            className="diagram-container flex justify-center items-center overflow-x-auto overflow-y-hidden rounded-xl p-8 min-h-[350px]"
             style={{
+              background: 'linear-gradient(to bottom, #F9FAFB, #FFFFFF)',
+              boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
               maxWidth: '100%',
             }}
           />

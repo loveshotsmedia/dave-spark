@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, FileText, Loader2, BarChart3, Download, ExternalLink } from "lucide-react";
+import { Search, FileText, Loader2, BarChart3, Download, ExternalLink, Mail, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -309,6 +309,28 @@ export function ProposalPanel({
     });
   };
 
+  const handleSendToClient = async () => {
+    if (!generatedProposalId) return;
+
+    const proposalUrl = `https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api/content/view/${generatedProposalId}`;
+
+    try {
+      await navigator.clipboard.writeText(proposalUrl);
+      toast({
+        title: "Proposal Link Copied!",
+        description: "Paste this link into an email to share with your client",
+        duration: 8000,
+      });
+    } catch {
+      // Fallback for browsers without clipboard API
+      toast({
+        title: "Share Proposal",
+        description: proposalUrl,
+        duration: 15000,
+      });
+    }
+  };
+
   const resetForm = () => {
     setSearchQuery("");
     setSearchResults([]);
@@ -426,31 +448,41 @@ export function ProposalPanel({
 
         {/* PDF Download Actions */}
         {showActions && generatedProposalId && (
-          <div className="mt-6 pt-4 border-t border-zinc-800 space-y-3">
+          <div className="mt-6 pt-4 border-t border-zinc-800 space-y-4">
             <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
               Proposal Actions
             </p>
-            <div className="flex gap-2">
+            <div className="grid gap-2">
               <Button
                 onClick={handleDownloadPDF}
-                variant="outline"
+                variant="default"
                 size="lg"
-                className="flex-1"
+                className="w-full"
               >
                 <Download className="mr-2 h-4 w-4" />
-                Download as PDF
+                Download Entire Proposal as PDF
+              </Button>
+              <Button
+                onClick={handleSendToClient}
+                variant="outline"
+                size="lg"
+                className="w-full"
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Send to Client
               </Button>
               <Button
                 onClick={handleViewProposal}
                 variant="ghost"
                 size="lg"
+                className="w-full"
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
-                View
+                View Full Page
               </Button>
             </div>
             <p className="text-xs text-zinc-600">
-              Click "Download as PDF" and choose "Save as PDF" from the print dialog
+              Click "Download Entire Proposal as PDF" and choose "Save as PDF" from the print dialog
             </p>
           </div>
         )}
