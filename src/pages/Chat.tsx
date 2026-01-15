@@ -36,7 +36,8 @@ export default function Chat() {
     conversationId, 
     loadConversation, 
     startNewConversation, 
-    getSavedConversations 
+    getSavedConversations,
+    clearChatAndStorage 
   } = useChat();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -166,6 +167,10 @@ export default function Chat() {
             onLoadConversation={loadConversation}
             onNewConversation={startNewConversation}
             onDeleteConversation={handleDeleteConversation}
+            onClearChat={() => {
+              clearChatAndStorage();
+              setSavedConversations([]);
+            }}
           />
         )}
 
