@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { PageTransition } from "@/components/effects/PageTransition";
+import { PageTransition, StaggerContainer, StaggerItem } from "@/components/effects/PageTransition";
 import { Header } from "@/components/dave/Header";
 import {
   listCases,
@@ -457,13 +457,13 @@ export default function Cases() {
               </Button>
             </div>
           ) : (
-            <div className="grid gap-px bg-zinc-800 rounded-sm overflow-hidden">
+            <StaggerContainer className="grid gap-px bg-zinc-800 rounded-sm overflow-hidden">
               {cases.map((caseFile) => (
-                <div
-                  key={caseFile.id}
-                  className={`bg-zinc-950/50 backdrop-blur-md p-4 cursor-pointer hover:bg-zinc-900/50 transition-colors duration-200 ${PRIORITY_STYLES[caseFile.priority] || ""}`}
-                  onClick={() => handleOpenCase(caseFile)}
-                >
+                <StaggerItem key={caseFile.id}>
+                  <div
+                    className={`bg-zinc-950/50 backdrop-blur-md p-4 cursor-pointer hover:bg-zinc-900/50 transition-colors duration-200 ${PRIORITY_STYLES[caseFile.priority] || ""}`}
+                    onClick={() => handleOpenCase(caseFile)}
+                  >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
@@ -505,9 +505,10 @@ export default function Cases() {
                       {caseFile.client_intent}
                     </p>
                   )}
-                </div>
+                  </div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           )}
         </div>
       </main>
