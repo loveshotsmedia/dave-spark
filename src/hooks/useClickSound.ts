@@ -6,11 +6,20 @@ const CLICK_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2568/2568-p
 // Success ping for confirmations
 const SUCCESS_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3';
 
+const SOUND_ENABLED_KEY = 'dave-sound-enabled';
+
+function isSoundEnabled(): boolean {
+  const stored = localStorage.getItem(SOUND_ENABLED_KEY);
+  return stored !== null ? stored === 'true' : true;
+}
+
 // Use native Audio API to avoid React version conflicts with use-sound
 export function useClickSound() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   const play = useCallback(() => {
+    if (!isSoundEnabled()) return;
+    
     try {
       if (!audioRef.current) {
         audioRef.current = new Audio(CLICK_SOUND_URL);
@@ -32,6 +41,8 @@ export function useSuccessSound() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   const play = useCallback(() => {
+    if (!isSoundEnabled()) return;
+    
     try {
       if (!audioRef.current) {
         audioRef.current = new Audio(SUCCESS_SOUND_URL);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageTransition } from "@/components/effects/PageTransition";
+import { PageTransition, StaggerContainer, StaggerItem } from "@/components/effects/PageTransition";
 import {
   Mail,
   MessageSquare,
@@ -245,14 +245,14 @@ export default function Campaigns() {
             </p>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredCampaigns.map((campaign) => (
-              <CampaignDetailDialog
-                key={campaign.id}
-                campaign={campaign}
-                onEnrollmentSuccess={fetchCampaigns}
-                trigger={
-                  <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+              <StaggerItem key={campaign.id}>
+                <CampaignDetailDialog
+                  campaign={campaign}
+                  onEnrollmentSuccess={fetchCampaigns}
+                  trigger={
+                    <Card className="cursor-pointer hover:border-primary/50 transition-colors">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
@@ -295,8 +295,9 @@ export default function Campaigns() {
                   </Card>
                 }
               />
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         ) : (
           <Card>
             <Table>

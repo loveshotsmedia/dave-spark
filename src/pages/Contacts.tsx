@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageTransition } from "@/components/effects/PageTransition";
+import { PageTransition, StaggerContainer, StaggerItem } from "@/components/effects/PageTransition";
 import {
   Search,
   Filter,
@@ -287,13 +287,13 @@ export default function Contacts() {
           </div>
         ) : viewMode === "grid" ? (
           /* Grid View */
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredContacts.map((contact) => (
-              <button
-                key={contact.id}
-                onClick={() => navigate(`/contacts/${contact.id}`)}
-                className="rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-primary/20"
-              >
+              <StaggerItem key={contact.id}>
+                <button
+                  onClick={() => navigate(`/contacts/${contact.id}`)}
+                  className="w-full rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-primary/20"
+                >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -349,8 +349,9 @@ export default function Contacts() {
                   </div>
                 )}
               </button>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         ) : (
           /* Table View */
           <div className="rounded-lg border bg-card">
