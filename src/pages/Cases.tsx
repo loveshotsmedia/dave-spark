@@ -73,31 +73,38 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-// Case type colors
+// Case type colors - Institutional dark
 const CASE_TYPE_COLORS: Record<string, string> = {
-  estate_planning: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  corporate_restructuring: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  insurance: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  investment: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-  succession: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
-  tax_planning: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
-  general: "bg-muted text-muted-foreground",
+  estate_planning: "bg-purple-500/20 text-purple-400 border border-purple-500/30",
+  corporate_restructuring: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+  insurance: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
+  investment: "bg-amber-500/20 text-amber-400 border border-amber-500/30",
+  succession: "bg-rose-500/20 text-rose-400 border border-rose-500/30",
+  tax_planning: "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30",
+  general: "bg-zinc-800 text-zinc-400 border border-zinc-700",
 };
 
-// Status colors
+// Status colors with disc indicators
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  pending_decision: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  closed: "bg-muted text-muted-foreground",
-  archived: "bg-muted/50 text-muted-foreground",
+  active: "text-emerald-500",
+  pending_decision: "text-amber-500",
+  closed: "text-zinc-600",
+  archived: "text-zinc-700",
 };
 
-// Priority styles
+const STATUS_DISC_COLORS: Record<string, string> = {
+  active: "bg-emerald-500/20",
+  pending_decision: "bg-amber-500/20",
+  closed: "bg-zinc-800",
+  archived: "bg-zinc-900",
+};
+
+// Priority styles - Minimal left border
 const PRIORITY_STYLES: Record<string, string> = {
-  urgent: "border-l-4 border-l-red-500",
-  high: "border-l-4 border-l-orange-500",
-  normal: "border-l-4 border-l-blue-500",
-  low: "border-l-4 border-l-gray-300",
+  urgent: "border-l-2 border-l-red-500",
+  high: "border-l-2 border-l-orange-500",
+  normal: "border-l-2 border-l-zinc-600",
+  low: "border-l-2 border-l-zinc-800",
 };
 
 const CASE_TYPE_OPTIONS = [
@@ -396,31 +403,34 @@ export default function Cases() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-black">
       <Header onLogout={handleLogout} onSettingsClick={() => {}} />
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
+      <main className="flex-1 overflow-y-auto scrollbar-thin">
+        <div className="mx-auto max-w-6xl px-4 py-4 space-y-4">
           {/* Header Section */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                <Briefcase className="h-8 w-8 text-primary" />
+              <h1 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                <Briefcase className="h-3.5 w-3.5" strokeWidth={1.5} />
                 Case Files
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-sm text-zinc-400 mt-1 font-mono">
                 Client cases and advisor judgment records
               </p>
             </div>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="h-8 rounded-sm bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono uppercase tracking-wide"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
               New Case
             </Button>
           </div>
@@ -428,74 +438,73 @@ export default function Cases() {
           {/* Case Grid */}
           {isLoading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
             </div>
           ) : cases.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No case files yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create a case file to track client planning and record your decisions
-                </p>
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Case
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="glass-card p-8 text-center">
+              <Briefcase className="h-8 w-8 mx-auto text-zinc-600 mb-3" strokeWidth={1.5} />
+              <h3 className="text-sm font-mono text-zinc-400 mb-1">No case files yet</h3>
+              <p className="text-xs text-zinc-600 mb-4">
+                Create a case file to track client planning
+              </p>
+              <Button 
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="h-8 rounded-sm bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+                Create First Case
+              </Button>
+            </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-px bg-zinc-800 rounded-sm overflow-hidden">
               {cases.map((caseFile) => (
-                <Card
+                <div
                   key={caseFile.id}
-                  className={`hover:shadow-md transition-shadow cursor-pointer ${PRIORITY_STYLES[caseFile.priority] || ""}`}
+                  className={`bg-zinc-950/50 backdrop-blur-md p-4 cursor-pointer hover:bg-zinc-900/50 transition-colors duration-200 ${PRIORITY_STYLES[caseFile.priority] || ""}`}
                   onClick={() => handleOpenCase(caseFile)}
                 >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <Badge className={CASE_TYPE_COLORS[caseFile.case_type] || CASE_TYPE_COLORS.general}>
-                        {caseFile.case_type.replace("_", " ")}
-                      </Badge>
-                      <Badge className={STATUS_COLORS[caseFile.status] || STATUS_COLORS.active}>
-                        {caseFile.status.replace("_", " ")}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground font-mono mt-1">
-                      {caseFile.case_number}
-                    </div>
-                    <CardTitle className="text-base leading-tight">{caseFile.case_name}</CardTitle>
-                    <CardDescription>
-                      {caseFile.contact?.first_name} {caseFile.contact?.last_name}
-                      {caseFile.contact?.company && ` • ${caseFile.contact.company}`}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {caseFile.client_intent && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {caseFile.client_intent}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        {caseFile.estimated_value && (
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
-                            {(caseFile.estimated_value / 1000000).toFixed(1)}M
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Gavel className="h-3 w-3" />
-                          {caseFile.decisions?.length || 0} decisions
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-xs font-mono uppercase tracking-wide ${CASE_TYPE_COLORS[caseFile.case_type] || CASE_TYPE_COLORS.general}`}>
+                          {caseFile.case_type.replace("_", " ")}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 text-xs ${STATUS_COLORS[caseFile.status] || STATUS_COLORS.active}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DISC_COLORS[caseFile.status] || STATUS_DISC_COLORS.active}`} />
+                          {caseFile.status.replace("_", " ")}
                         </span>
                       </div>
-                      <span className="text-xs text-muted-foreground">
+                      <div className="text-xs text-zinc-600 font-mono mb-1">
+                        {caseFile.case_number}
+                      </div>
+                      <h3 className="text-sm text-zinc-200 font-medium truncate">{caseFile.case_name}</h3>
+                      <p className="text-xs text-zinc-500 truncate">
+                        {caseFile.contact?.first_name} {caseFile.contact?.last_name}
+                        {caseFile.contact?.company && ` • ${caseFile.contact.company}`}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 text-xs text-zinc-600 font-mono tabular-nums">
+                      {caseFile.estimated_value && (
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" strokeWidth={1.5} />
+                          {(caseFile.estimated_value / 1000000).toFixed(1)}M
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Gavel className="h-3 w-3" strokeWidth={1.5} />
+                        {caseFile.decisions?.length || 0}
+                      </span>
+                      <span>
                         {format(new Date(caseFile.updated_at), "MMM d")}
                       </span>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  {caseFile.client_intent && (
+                    <p className="text-xs text-zinc-500 mt-2 line-clamp-1">
+                      {caseFile.client_intent}
+                    </p>
+                  )}
+                </div>
               ))}
             </div>
           )}

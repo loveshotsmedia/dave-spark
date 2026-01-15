@@ -115,12 +115,12 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col bg-black">
       <Header onLogout={handleLogout} onSettingsClick={() => setIsSettingsOpen(true)} />
 
       {/* Messages Area */}
       <main className="flex-1 overflow-y-auto scrollbar-thin">
-        <div className="mx-auto max-w-3xl px-4 py-6 space-y-6">
+        <div className="mx-auto max-w-3xl px-4 py-4 space-y-4">
           {messages.map((message) => (
             <ChatMessage
               key={message.id}
@@ -131,15 +131,15 @@ export default function Chat() {
           
           {/* Proposal Diagrams Section */}
           {proposalDiagrams.length > 0 && (
-            <div className="space-y-4 pt-4 border-t border-border">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <BarChart3 className="h-4 w-4" />
-                <span>Visual Illustrations</span>
+            <div className="space-y-3 pt-3 border-t border-zinc-800">
+              <div className="flex items-center gap-2 text-xs text-zinc-500 font-mono uppercase tracking-wider">
+                <BarChart3 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                <span>Diagrams</span>
                 <button 
                   onClick={() => setProposalDiagrams([])}
-                  className="ml-auto text-xs hover:text-foreground"
+                  className="ml-auto text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-200"
                 >
-                  Clear diagrams
+                  Clear
                 </button>
               </div>
               {proposalDiagrams.map((diagram, index) => (

@@ -23,141 +23,152 @@ export function Header({ onLogout, onSettingsClick }: HeaderProps) {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-40 flex h-12 items-center justify-between border-b border-zinc-800 bg-black px-4 md:px-6">
+      <div className="flex items-center gap-6">
         <div 
           className="flex items-center gap-2 cursor-pointer" 
           onClick={() => navigate("/chat")}
         >
-          <span className="text-xl font-semibold text-foreground">WFS</span>
-          <div className="flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1">
-            <span className="text-xs font-medium text-primary-foreground">Dave 2.0</span>
-          </div>
+          <span className="text-xs font-semibold uppercase tracking-widest text-zinc-500">WFS</span>
+          <span className="text-xs font-mono text-zinc-400">Dave 2.0</span>
         </div>
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 ml-6">
-          <Button
-            variant={isActive("/contacts") ? "secondary" : "ghost"}
-            size="sm"
+        <nav className="hidden md:flex items-center">
+          <NavLink 
+            active={isActive("/contacts")} 
             onClick={() => navigate("/contacts")}
-            className="text-muted-foreground hover:text-foreground"
+            icon={<Users className="h-3.5 w-3.5" strokeWidth={1.5} />}
           >
-            <Users className="h-4 w-4 mr-2" />
             Contacts
-          </Button>
-          <Button
-            variant={isActive("/cases") ? "secondary" : "ghost"}
-            size="sm"
+          </NavLink>
+          <NavLink 
+            active={isActive("/cases")} 
             onClick={() => navigate("/cases")}
-            className="text-muted-foreground hover:text-foreground"
+            icon={<Briefcase className="h-3.5 w-3.5" strokeWidth={1.5} />}
           >
-            <Briefcase className="h-4 w-4 mr-2" />
             Cases
-          </Button>
-          <Button
-            variant={isActive("/knowledge") ? "secondary" : "ghost"}
-            size="sm"
+          </NavLink>
+          <NavLink 
+            active={isActive("/knowledge")} 
             onClick={() => navigate("/knowledge")}
-            className="text-muted-foreground hover:text-foreground"
+            icon={<BookOpen className="h-3.5 w-3.5" strokeWidth={1.5} />}
           >
-            <BookOpen className="h-4 w-4 mr-2" />
             Knowledge
-          </Button>
-          <Button
-            variant={isActive("/content-library") ? "secondary" : "ghost"}
-            size="sm"
+          </NavLink>
+          <NavLink 
+            active={isActive("/content-library")} 
             onClick={() => navigate("/content-library")}
-            className="text-muted-foreground hover:text-foreground"
+            icon={<FolderOpen className="h-3.5 w-3.5" strokeWidth={1.5} />}
           >
-            <FolderOpen className="h-4 w-4 mr-2" />
             Content
-          </Button>
-          <Button
-            variant={isActive("/campaigns") ? "secondary" : "ghost"}
-            size="sm"
+          </NavLink>
+          <NavLink 
+            active={isActive("/campaigns")} 
             onClick={() => navigate("/campaigns")}
-            className="text-muted-foreground hover:text-foreground"
+            icon={<Mail className="h-3.5 w-3.5" strokeWidth={1.5} />}
           >
-            <Mail className="h-4 w-4 mr-2" />
             Campaigns
-          </Button>
-          <Button
-            variant={isActive("/inbox") ? "secondary" : "ghost"}
-            size="sm"
+          </NavLink>
+          <NavLink 
+            active={isActive("/inbox")} 
             onClick={() => navigate("/inbox")}
-            className="text-muted-foreground hover:text-foreground"
+            icon={<Inbox className="h-3.5 w-3.5" strokeWidth={1.5} />}
           >
-            <Inbox className="h-4 w-4 mr-2" />
             Inbox
-          </Button>
+          </NavLink>
         </nav>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <RiskBadges />
 
         <Button
           variant="ghost"
           size="icon"
           onClick={onSettingsClick}
-          className="text-muted-foreground hover:text-foreground"
+          className="h-8 w-8 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 rounded-sm"
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-4 w-4" strokeWidth={1.5} />
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-sm hover:bg-zinc-900/50">
+              <Avatar className="h-6 w-6 rounded-sm">
+                <AvatarFallback className="bg-zinc-800 text-zinc-400 text-xs font-mono rounded-sm">
                   DW
                 </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+          <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 rounded-sm">
+            <DropdownMenuItem className="flex items-center gap-2 text-zinc-400 focus:bg-zinc-900 focus:text-zinc-200 rounded-sm">
+              <Avatar className="h-5 w-5 rounded-sm">
+                <AvatarFallback className="bg-zinc-800 text-zinc-500 text-xs font-mono rounded-sm">
                   DW
                 </AvatarFallback>
               </Avatar>
-              <span>Dave Wilson</span>
+              <span className="text-xs">Dave Wilson</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/contacts")} className="md:hidden">
-              <Users className="mr-2 h-4 w-4" />
+            <DropdownMenuSeparator className="bg-zinc-800" />
+            <DropdownMenuItem onClick={() => navigate("/contacts")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
+              <Users className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
               Contacts
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/cases")} className="md:hidden">
-              <Briefcase className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() => navigate("/cases")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
+              <Briefcase className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
               Cases
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/knowledge")} className="md:hidden">
-              <BookOpen className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() => navigate("/knowledge")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
+              <BookOpen className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
               Knowledge Base
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/content-library")} className="md:hidden">
-              <FolderOpen className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() => navigate("/content-library")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
+              <FolderOpen className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
               Content Library
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/campaigns")} className="md:hidden">
-              <Mail className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() => navigate("/campaigns")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
+              <Mail className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
               Campaigns
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/inbox")} className="md:hidden">
-              <Inbox className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() => navigate("/inbox")} className="md:hidden text-zinc-500 focus:bg-zinc-900 focus:text-zinc-200 text-xs rounded-sm">
+              <Inbox className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
               Inbox
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="md:hidden" />
-            <DropdownMenuItem onClick={onLogout} className="text-destructive">
-              <LogOut className="mr-2 h-4 w-4" />
+            <DropdownMenuSeparator className="md:hidden bg-zinc-800" />
+            <DropdownMenuItem onClick={onLogout} className="text-red-500 focus:bg-zinc-900 focus:text-red-400 text-xs rounded-sm">
+              <LogOut className="mr-2 h-3.5 w-3.5" strokeWidth={1.5} />
               Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </header>
+  );
+}
+
+interface NavLinkProps {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}
+
+function NavLink({ active, onClick, icon, children }: NavLinkProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        relative flex items-center gap-1.5 px-3 py-3 text-xs transition-colors duration-200
+        ${active 
+          ? 'text-white border-l-2 border-l-emerald-500 bg-zinc-900/30 -ml-px' 
+          : 'text-zinc-500 hover:text-zinc-300'
+        }
+      `}
+    >
+      {icon}
+      <span className="uppercase tracking-wide">{children}</span>
+    </button>
   );
 }
