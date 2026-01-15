@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Meteors } from "@/components/effects/MeteorBackground";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -24,23 +25,29 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      {/* Global Meteor Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <Meteors number={15} />
+      </div>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/contacts" element={<Contacts />} />
-          <Route path="/contacts/:id" element={<ContactProfile />} />
-          <Route path="/content-library" element={<ContentLibraryPage />} />
-          <Route path="/campaigns" element={<Campaigns />} />
-          <Route path="/knowledge" element={<KnowledgeBase />} />
-          <Route path="/cases" element={<Cases />} />
-          <Route path="/inbox" element={<Inbox />} />
-          <Route path="/client/:token" element={<TrustBuilderView />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <div className="relative z-10">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/contacts" element={<Contacts />} />
+            <Route path="/contacts/:id" element={<ContactProfile />} />
+            <Route path="/content-library" element={<ContentLibraryPage />} />
+            <Route path="/campaigns" element={<Campaigns />} />
+            <Route path="/knowledge" element={<KnowledgeBase />} />
+            <Route path="/cases" element={<Cases />} />
+            <Route path="/inbox" element={<Inbox />} />
+            <Route path="/client/:token" element={<TrustBuilderView />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
