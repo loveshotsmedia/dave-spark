@@ -18,8 +18,8 @@ const Index = () => {
   }, [isLoading, onboardingComplete, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <div className="flex min-h-screen items-center justify-center bg-black">
+      <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
     </div>
   );
 };

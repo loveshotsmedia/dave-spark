@@ -2,111 +2,112 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dave 2.0 Design System - WFS Wealth & Financial Strategies
+/* Dave 2.0 Design System - BlackRock x Tesla Institutional Grade
    All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    /* WFS Brand Colors */
-    --background: 240 6% 97%; /* #f4f4f5 - Light zinc */
-    --foreground: 240 10% 4%; /* #18181b - Zinc 900 */
+    /* BlackRock x Tesla Dark Theme */
+    --background: 0 0% 0%; /* Pure black */
+    --foreground: 240 5% 84%; /* zinc-300 */
 
-    --card: 0 0% 100%; /* #ffffff */
-    --card-foreground: 240 10% 4%;
+    --card: 240 6% 6%; /* zinc-950/50 equivalent */
+    --card-foreground: 240 5% 84%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
+    --popover: 240 6% 6%;
+    --popover-foreground: 240 5% 84%;
 
-    /* Primary - Sky Blue for trust */
-    --primary: 200 98% 39%; /* #0284c7 */
+    /* Primary - Emerald for active states */
+    --primary: 160 84% 39%; /* emerald-500 */
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary */
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 10% 4%;
+    /* Secondary - Dark zinc */
+    --secondary: 240 4% 10%;
+    --secondary-foreground: 240 5% 84%;
 
-    /* Muted */
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%; /* #71717a - Zinc 500 */
+    /* Muted - Subtle zinc */
+    --muted: 240 4% 10%;
+    --muted-foreground: 240 4% 46%; /* zinc-500 */
 
     /* Accent */
-    --accent: 200 98% 39%;
+    --accent: 160 84% 39%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Success */
-    --success: 142 71% 45%; /* #22c55e */
+    /* Success - Emerald */
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
-    /* Warning */
-    --warning: 38 92% 50%; /* #f59e0b */
-    --warning-foreground: 0 0% 100%;
+    /* Warning - Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
 
-    /* Border & Input */
-    --border: 240 6% 90%; /* #e4e4e7 - Zinc 200 */
-    --input: 240 6% 90%;
-    --ring: 200 98% 39%;
+    /* Border - Subtle zinc */
+    --border: 240 4% 16%; /* zinc-800 */
+    --input: 240 4% 10%; /* zinc-900 */
+    --ring: 160 84% 39%;
 
-    --radius: 0.75rem;
+    --radius: 0.125rem; /* rounded-sm default */
 
     /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 10% 4%;
-    --sidebar-primary: 200 98% 39%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 240 5% 84%;
+    --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 96%;
-    --sidebar-accent-foreground: 240 10% 4%;
-    --sidebar-border: 240 6% 90%;
-    --sidebar-ring: 200 98% 39%;
+    --sidebar-accent: 240 4% 10%;
+    --sidebar-accent-foreground: 240 5% 84%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 160 84% 39%;
   }
 
   .dark {
-    --background: 240 10% 4%;
-    --foreground: 240 6% 97%;
+    /* Same as root - this is a dark-first design */
+    --background: 0 0% 0%;
+    --foreground: 240 5% 84%;
 
-    --card: 240 6% 10%;
-    --card-foreground: 240 6% 97%;
+    --card: 240 6% 6%;
+    --card-foreground: 240 5% 84%;
 
-    --popover: 240 6% 10%;
-    --popover-foreground: 240 6% 97%;
+    --popover: 240 6% 6%;
+    --popover-foreground: 240 5% 84%;
 
-    --primary: 200 98% 50%;
-    --primary-foreground: 240 10% 4%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 5% 17%;
-    --secondary-foreground: 240 6% 97%;
+    --secondary: 240 4% 10%;
+    --secondary-foreground: 240 5% 84%;
 
-    --muted: 240 5% 17%;
-    --muted-foreground: 240 4% 65%;
+    --muted: 240 4% 10%;
+    --muted-foreground: 240 4% 46%;
 
-    --accent: 200 98% 50%;
-    --accent-foreground: 240 10% 4%;
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 240 6% 97%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 35%;
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 40%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
 
-    --border: 240 5% 17%;
-    --input: 240 5% 17%;
-    --ring: 200 98% 50%;
+    --border: 240 4% 16%;
+    --input: 240 4% 10%;
+    --ring: 160 84% 39%;
 
-    --sidebar-background: 240 6% 10%;
-    --sidebar-foreground: 240 6% 97%;
-    --sidebar-primary: 200 98% 50%;
-    --sidebar-primary-foreground: 240 10% 4%;
-    --sidebar-accent: 240 5% 17%;
-    --sidebar-accent-foreground: 240 6% 97%;
-    --sidebar-border: 240 5% 17%;
-    --sidebar-ring: 200 98% 50%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 240 5% 84%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 10%;
+    --sidebar-accent-foreground: 240 5% 84%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 160 84% 39%;
   }
 }
 
@@ -116,15 +117,20 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-black text-zinc-200 font-sans antialiased;
+  }
+
+  /* Selection color - Emerald accent */
+  ::selection {
+    @apply bg-emerald-500/30 text-emerald-200;
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - Minimal */
 @layer utilities {
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -132,11 +138,11 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full;
+    @apply bg-zinc-800 rounded-none;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/30;
+    @apply bg-zinc-700;
   }
 }
 
@@ -148,7 +154,7 @@
   }
   30% {
     opacity: 1;
-    transform: translateY(-4px);
+    transform: translateY(-2px);
   }
 }
 
@@ -164,11 +170,11 @@
   animation-delay: 0.4s;
 }
 
-/* Message animations */
+/* Message animations - Snappy, not bouncy */
 @keyframes message-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -177,7 +183,7 @@
 }
 
 .animate-message-in {
-  animation: message-in 0.3s ease-out;
+  animation: message-in 0.2s ease-out;
 }
 
 /* Panel slide animation */
@@ -191,7 +197,7 @@
 }
 
 .animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out;
+  animation: slide-in-right 0.2s ease-out;
 }
 
 /* Suggestion chip pulse */
@@ -200,7 +206,7 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.8;
+    opacity: 0.7;
   }
 }
 
@@ -225,5 +231,16 @@
 }
 
 .animate-progress {
-  animation: progress 2s ease-in-out infinite;
+  animation: progress 2s ease-out infinite;
+}
+
+/* Glass card utility */
+@layer utilities {
+  .glass-card {
+    @apply bg-zinc-950/50 backdrop-blur-md border border-zinc-800 rounded-sm;
+  }
+  
+  .glass-card-active {
+    @apply bg-zinc-950/50 backdrop-blur-md border border-zinc-700 rounded-sm;
+  }
 }

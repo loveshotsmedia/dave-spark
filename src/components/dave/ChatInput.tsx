@@ -148,7 +148,7 @@ export function ChatInput({
   }, [input]);
 
   return (
-    <div className="border-t bg-card p-4">
+    <div className="border-t border-zinc-800 bg-black p-4">
       <div 
         ref={dropZoneRef}
         className="mx-auto max-w-3xl space-y-3"
@@ -159,10 +159,10 @@ export function ChatInput({
       >
         {/* Drag overlay */}
         {isDragging && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-2xl border-2 border-dashed border-primary">
-            <div className="flex flex-col items-center gap-2 text-primary">
-              <Upload className="h-8 w-8 animate-bounce" />
-              <span className="text-sm font-medium">Drop files here</span>
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm rounded-sm border border-dashed border-emerald-500/50">
+            <div className="flex flex-col items-center gap-2 text-emerald-500">
+              <Upload className="h-6 w-6" />
+              <span className="text-xs font-mono uppercase tracking-wider">Drop files</span>
             </div>
           </div>
         )}
@@ -173,16 +173,16 @@ export function ChatInput({
             {attachedFiles.map((file, index) => (
               <div
                 key={`${file.name}-${index}`}
-                className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-sm"
+                className="flex items-center gap-2 rounded-sm border border-zinc-800 bg-zinc-900/50 px-2 py-1 text-xs font-mono"
               >
-                <Paperclip className="h-3 w-3 text-muted-foreground" />
-                <span className="max-w-[150px] truncate text-foreground">
+                <Paperclip className="h-3 w-3 text-zinc-500" />
+                <span className="max-w-[120px] truncate text-zinc-400">
                   {file.name}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeFile(index)}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  className="text-zinc-600 hover:text-red-500 transition-colors duration-200"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -197,11 +197,11 @@ export function ChatInput({
             value={isListening ? input + interimTranscript : input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isListening ? "Listening..." : "Message Dave 2.0... (drag & drop files here)"}
+            placeholder={isListening ? "Listening..." : "> Enter command..."}
             className={cn(
-              "min-h-[52px] resize-none pr-24 rounded-2xl border-border bg-background transition-all",
-              isDragging && "border-primary ring-2 ring-primary/20",
-              isListening && "border-red-500 ring-2 ring-red-500/20"
+              "min-h-[44px] resize-none pr-20 rounded-sm border-none bg-zinc-900 font-mono text-sm text-zinc-200 placeholder:text-zinc-600 focus:ring-1 focus:ring-zinc-700 transition-all duration-200",
+              isDragging && "ring-1 ring-emerald-500/50",
+              isListening && "ring-1 ring-red-500/50"
             )}
             rows={1}
             disabled={isLoading}
@@ -210,19 +210,19 @@ export function ChatInput({
             {voiceSupported && (
               <Button
                 size="icon"
-                variant={isListening ? "destructive" : "ghost"}
+                variant="ghost"
                 onClick={toggleListening}
                 disabled={isLoading}
                 className={cn(
-                  "h-8 w-8 rounded-lg",
-                  isListening && "animate-pulse"
+                  "h-7 w-7 rounded-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800",
+                  isListening && "text-red-500 hover:text-red-400"
                 )}
                 title={isListening ? "Stop listening" : "Voice input"}
               >
                 {isListening ? (
-                  <MicOff className="h-4 w-4" />
+                  <MicOff className="h-3.5 w-3.5" strokeWidth={1.5} />
                 ) : (
-                  <Mic className="h-4 w-4" />
+                  <Mic className="h-3.5 w-3.5" strokeWidth={1.5} />
                 )}
               </Button>
             )}
@@ -230,9 +230,9 @@ export function ChatInput({
               size="icon"
               onClick={handleSubmit}
               disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-              className="h-8 w-8 rounded-lg"
+              className="h-7 w-7 rounded-sm bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-zinc-800 disabled:text-zinc-600"
             >
-              <ArrowUp className="h-4 w-4" />
+              <ArrowUp className="h-3.5 w-3.5" strokeWidth={1.5} />
             </Button>
           </div>
         </div>
@@ -247,54 +247,54 @@ export function ChatInput({
           accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.gif,.webp"
         />
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1">
           <QuickActionButton
-            icon={<Paperclip className="h-4 w-4" />}
+            icon={<Paperclip className="h-3 w-3" strokeWidth={1.5} />}
             label="Attach"
             onClick={handleAttachClick}
           />
           <QuickActionButton
-            icon={<Phone className="h-4 w-4" />}
+            icon={<Phone className="h-3 w-3" strokeWidth={1.5} />}
             label="Calls"
             onClick={onVoiceCallClick}
           />
           <QuickActionButton
-            icon={<FileText className="h-4 w-4" />}
+            icon={<FileText className="h-3 w-3" strokeWidth={1.5} />}
             label="Proposal"
             onClick={onProposalClick}
           />
           <QuickActionButton
-            icon={<Calculator className="h-4 w-4" />}
-            label="Calculators"
+            icon={<Calculator className="h-3 w-3" strokeWidth={1.5} />}
+            label="Calc"
             onClick={onCalculatorsClick}
           />
           <QuickActionButton
-            icon={<Shield className="h-4 w-4" />}
+            icon={<Shield className="h-3 w-3" strokeWidth={1.5} />}
             label="GAAR"
             onClick={onGAARClick}
           />
           <QuickActionButton
-            icon={<Database className="h-4 w-4" />}
+            icon={<Database className="h-3 w-3" strokeWidth={1.5} />}
             label="Query"
             onClick={onQueryClick}
           />
           <QuickActionButton
-            icon={<Calendar className="h-4 w-4" />}
-            label="Calendar"
+            icon={<Calendar className="h-3 w-3" strokeWidth={1.5} />}
+            label="Cal"
             onClick={onCalendarClick}
           />
           <QuickActionButton
-            icon={<MessageSquare className="h-4 w-4" />}
+            icon={<MessageSquare className="h-3 w-3" strokeWidth={1.5} />}
             label="SMS"
             onClick={onSMSClick}
           />
           <QuickActionButton
-            icon={<Mail className="h-4 w-4" />}
+            icon={<Mail className="h-3 w-3" strokeWidth={1.5} />}
             label="Email"
             onClick={onEmailClick}
           />
           <QuickActionButton
-            icon={<Library className="h-4 w-4" />}
+            icon={<Library className="h-3 w-3" strokeWidth={1.5} />}
             label="Content"
             onClick={onContentLibraryClick}
           />
@@ -315,10 +315,10 @@ function QuickActionButton({
 }) {
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
       onClick={onClick}
-      className="gap-1.5 rounded-full border-border bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"
+      className="gap-1 h-7 px-2 rounded-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 text-xs font-mono uppercase tracking-wide transition-colors duration-200"
     >
       {icon}
       {label}
