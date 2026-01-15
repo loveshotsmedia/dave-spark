@@ -94,6 +94,9 @@ function escapeRegex(str: string): string {
 }
 
 export function useChat() {
+  // Track if we've completed initial load to prevent saving during load
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
+  
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     const saved = loadFromStorage();
     if (saved.length > 0) {
@@ -112,8 +115,18 @@ export function useChat() {
   const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>('idle');
   const [workingMessageIndex, setWorkingMessageIndex] = useState(0);
   const [conversationId, setConversationId] = useState<string>(() => {
-    return `conv-${Date.now()}`;
+    // Use existing conversation ID if available
+    const existing = localStorage.getItem('dave-current-conversation-id');
+    if (existing) return existing;
+    const newId = `conv-${Date.now()}`;
+    localStorage.setItem('dave-current-conversation-id', newId);
+    return newId;
   });
+  
+  // Mark initial load as complete after first render
+  useEffect(() => {
+    setHasLoadedFromStorage(true);
+  }, []);
   const loadingMessageIdRef = useRef<string | null>(null);
   const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const workingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -313,12 +326,18 @@ export function useChat() {
   }, []);
 
   const clearChatAndStorage = useCallback(() => {
-    // Clear the current chat from localStorage
+    // Clear all localStorage items
     localStorage.removeItem(CHAT_STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('dave-current-conversation-id');
+    
     // Reset messages to welcome only
     clearMessages();
-    // Start a fresh conversation
-    setConversationId(`conv-${Date.now()}`);
+    
+    // Start a fresh conversation with new ID
+    const newId = `conv-${Date.now()}`;
+    localStorage.setItem('dave-current-conversation-id', newId);
+    setConversationId(newId);
   }, [clearMessages]);
 
   const saveConversation = useCallback(() => {
@@ -379,7 +398,14 @@ export function useChat() {
   }, []);
 
   const startNewConversation = useCallback(() => {
-    setConversationId(`conv-${Date.now()}`);
+    // Clear current conversation ID
+    localStorage.removeItem('dave-current-conversation-id');
+    
+    // Generate new ID
+    const newId = `conv-${Date.now()}`;
+    localStorage.setItem('dave-current-conversation-id', newId);
+    setConversationId(newId);
+    
     clearMessages();
   }, [clearMessages]);
 
@@ -387,17 +413,23 @@ export function useChat() {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   }, []);
 
-  // Auto-save after messages change
+  // Auto-save after messages change - BUT ONLY after initial load is complete
   useEffect(() => {
+    // Don't save during initial load to prevent duplicates
+    if (!hasLoadedFromStorage) return;
+    
     if (messages.length > 1 && !isLoading) {
       saveConversation();
     }
-  }, [messages, isLoading, saveConversation]);
+  }, [messages, isLoading, saveConversation, hasLoadedFromStorage]);
 
-  // Save current chat to localStorage on every message change
+  // Save current chat to localStorage on every message change - BUT ONLY after initial load
   useEffect(() => {
+    // Don't save during initial load to prevent duplicates
+    if (!hasLoadedFromStorage) return;
+    
     saveToStorage(messages);
-  }, [messages]);
+  }, [messages, hasLoadedFromStorage]);
 
   return {
     messages,
