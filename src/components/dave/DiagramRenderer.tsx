@@ -20,12 +20,59 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
 
   useEffect(() => {
     if (diagram.format === 'mermaid' && containerRef.current) {
-      // Initialize Mermaid
+      // Initialize Mermaid with professional styling
       mermaid.initialize({
         startOnLoad: false,
-        theme: 'default',
+        theme: 'base',
         securityLevel: 'loose',
-        fontFamily: 'inherit'
+        themeVariables: {
+          // Professional color scheme
+          primaryColor: '#0EA5E9',
+          primaryTextColor: '#FFFFFF',
+          primaryBorderColor: '#0284C7',
+          
+          secondaryColor: '#8B5CF6',
+          secondaryTextColor: '#FFFFFF',
+          secondaryBorderColor: '#7C3AED',
+          
+          tertiaryColor: '#10B981',
+          tertiaryTextColor: '#FFFFFF',
+          tertiaryBorderColor: '#059669',
+          
+          // Node styling
+          nodeBorder: '#374151',
+          nodeTextColor: '#F9FAFB',
+          
+          // Line styling
+          lineColor: '#6B7280',
+          
+          // Background
+          background: '#18181B',
+          mainBkg: '#27272A',
+          
+          // Font
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+          fontSize: '14px'
+        },
+        flowchart: {
+          htmlLabels: true,
+          curve: 'basis',
+          padding: 20,
+          nodeSpacing: 50,
+          rankSpacing: 80,
+          diagramPadding: 30,
+          useMaxWidth: true
+        },
+        gantt: {
+          titleTopMargin: 25,
+          barHeight: 40,
+          barGap: 8,
+          topPadding: 75,
+          gridLineStartPadding: 35,
+          fontSize: 12,
+          numberSectionStyles: 4,
+          useMaxWidth: true
+        }
       });
 
       // Render the diagram
@@ -48,33 +95,33 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
   }, [diagram.content, diagram.format]);
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-zinc-800 bg-zinc-900/50">
       {diagram.title && (
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">{diagram.title}</CardTitle>
+        <CardHeader className="pb-2 border-b border-zinc-800">
+          <CardTitle className="text-base font-medium text-zinc-200">{diagram.title}</CardTitle>
         </CardHeader>
       )}
       <CardContent className="pt-4">
         {diagram.format === 'mermaid' && (
           <div 
             ref={containerRef} 
-            className="flex justify-center overflow-x-auto"
+            className="diagram-container flex justify-center overflow-x-auto rounded-lg bg-gradient-to-b from-zinc-900 to-zinc-950 p-6"
           />
         )}
 
         {diagram.format === 'html' && (
           <div 
-            className="prose prose-sm max-w-none dark:prose-invert"
+            className="prose prose-sm max-w-none prose-invert"
             dangerouslySetInnerHTML={{ __html: diagram.content }}
           />
         )}
 
         {diagram.format === 'chartjs' && (
           <div className="space-y-2">
-            <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+            <pre className="bg-zinc-800 p-4 rounded-lg text-xs overflow-x-auto text-zinc-300">
               {diagram.content}
             </pre>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-zinc-500">
               Chart.js data - integrate with a charting library for visualization
             </p>
           </div>

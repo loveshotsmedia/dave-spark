@@ -244,3 +244,56 @@
     @apply bg-zinc-950/50 backdrop-blur-md border border-zinc-700 rounded-sm;
   }
 }
+
+/* Professional Mermaid Diagram Styling */
+.diagram-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.diagram-container .node rect,
+.diagram-container .node circle,
+.diagram-container .node ellipse,
+.diagram-container .node polygon {
+  stroke-width: 2px !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: all 0.2s ease;
+}
+
+.diagram-container .node:hover rect,
+.diagram-container .node:hover circle,
+.diagram-container .node:hover ellipse,
+.diagram-container .node:hover polygon {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.diagram-container .nodeLabel,
+.diagram-container .edgeLabel {
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.diagram-container .edgePath .path {
+  stroke-width: 2px !important;
+}
+
+.diagram-container .marker {
+  fill: #6B7280;
+  stroke: #6B7280;
+}
+
+/* Gantt chart styling */
+.diagram-container .grid .tick line {
+  stroke: #3f3f46;
+  stroke-width: 1px;
+}
+
+.diagram-container .task {
+  stroke-width: 2px;
+}
+
+.diagram-container .taskText {
+  fill: #f4f4f5;
+  font-weight: 500;
+}
