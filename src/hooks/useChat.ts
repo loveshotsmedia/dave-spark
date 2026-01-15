@@ -27,8 +27,8 @@ const WORKING_MESSAGES = [
   "Almost there..."
 ];
 
-// Strip any working message artifacts from the final response
-function cleanWorkingMessageArtifacts(response: string): string {
+// Strip any working message artifacts and streaming JSON from the final response
+function cleanStreamingArtifacts(response: string): string {
   let cleaned = response;
   
   // Remove any working messages that might have been prepended
@@ -42,6 +42,11 @@ function cleanWorkingMessageArtifacts(response: string): string {
       cleaned = cleaned.replace(pattern, '');
     }
   }
+  
+  // Remove streaming control JSON objects like {"type":"done","fullResponse":"..."}
+  // These appear at the end of streamed responses
+  cleaned = cleaned.replace(/\{"type"\s*:\s*"done"\s*,\s*"fullResponse"\s*:\s*"[^"]*"\s*\}\s*$/s, '');
+  cleaned = cleaned.replace(/\{"type"\s*:\s*"done"[^}]*\}\s*$/s, '');
   
   return cleaned.trim();
 }
@@ -176,7 +181,7 @@ export function useChat() {
         streamedContentRef.current += chunk;
         
         // Clean any working message artifacts from streamed content in real-time
-        const cleanedContent = cleanWorkingMessageArtifacts(streamedContentRef.current);
+        const cleanedContent = cleanStreamingArtifacts(streamedContentRef.current);
         
         // Update message with streamed content - clear workingMessage to prevent artifacts
         setMessages((prev) =>
@@ -211,7 +216,7 @@ export function useChat() {
       }
 
       // Clean the response of any working message artifacts
-      const cleanedResponse = cleanWorkingMessageArtifacts(response.response);
+      const cleanedResponse = cleanStreamingArtifacts(response.response);
 
       // Finalize the message
       const assistantMessage: ChatMessage = {
