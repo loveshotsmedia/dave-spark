@@ -18,10 +18,20 @@ export function TypingIndicator({
   typedContent,
   fullContent
 }: TypingIndicatorProps) {
-  // Show streaming content (real-time response)
-  if (loadingPhase === 'streaming' && typedContent !== undefined) {
+  // Show streaming content (real-time response) - prioritize this over all other states
+  if (loadingPhase === 'streaming' && typedContent) {
     return (
-      <div className="prose prose-sm max-w-none">
+      <div className="prose prose-sm max-w-none dark:prose-invert">
+        <span>{typedContent}</span>
+        <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5" />
+      </div>
+    );
+  }
+
+  // If we have typed content but phase hasn't updated yet, still show it
+  if (typedContent && typedContent.length > 0) {
+    return (
+      <div className="prose prose-sm max-w-none dark:prose-invert">
         <span>{typedContent}</span>
         <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5" />
       </div>

@@ -151,7 +151,7 @@ export function useChat() {
         // Accumulate content
         streamedContentRef.current += chunk;
         
-        // Update message with streamed content
+        // Update message with streamed content - clear workingMessage to prevent artifacts
         setMessages((prev) =>
           prev.map((m) =>
             m.id === loadingMessageId
@@ -159,6 +159,7 @@ export function useChat() {
                   ...m, 
                   loadingPhase: 'streaming',
                   isLoading: true,
+                  workingMessage: undefined,
                   content: streamedContentRef.current,
                   typedContent: streamedContentRef.current 
                 }
