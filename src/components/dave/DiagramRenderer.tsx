@@ -19,7 +19,6 @@ interface DiagramRendererProps {
 
 export function DiagramRenderer({ diagram }: DiagramRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const idRef = useRef(`mermaid-${Math.random().toString(36).substring(7)}`);
   const mermaidInitRef = useRef(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasRenderError, setHasRenderError] = useState(false);
@@ -33,6 +32,17 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
     // Nothing to render => clear any previous SVG and bail.
     if (!container || !source) {
       if (container) container.innerHTML = '';
+      setHasRenderError(true);
+      return;
+    }
+
+    // Basic syntax validation - reject obviously invalid content
+    const lowerSource = source.toLowerCase();
+    const hasValidDiagramType = /^(graph|flowchart|sequencediagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|quadrantChart|requirementDiagram|gitGraph|mindmap|timeline|sankey|xychart)/i.test(source.trim());
+    
+    if (!hasValidDiagramType) {
+      setHasRenderError(true);
+      container.innerHTML = '';
       return;
     }
 
@@ -42,32 +52,23 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
         startOnLoad: false,
         theme: 'base',
         securityLevel: 'loose',
+        suppressErrorRendering: true,
+        logLevel: 'fatal',
         themeVariables: {
-          // Professional color scheme with WHITE text on colored backgrounds
           primaryColor: '#0EA5E9',
           primaryTextColor: '#FFFFFF',
           primaryBorderColor: '#0284C7',
-
           secondaryColor: '#8B5CF6',
           secondaryTextColor: '#FFFFFF',
           secondaryBorderColor: '#7C3AED',
-
           tertiaryColor: '#10B981',
           tertiaryTextColor: '#FFFFFF',
           tertiaryBorderColor: '#059669',
-
-          // Node styling
           nodeBorder: '#E5E7EB',
           nodeTextColor: '#1F2937',
-
-          // Line styling
           lineColor: '#6B7280',
-
-          // Light background
           background: '#FFFFFF',
           mainBkg: '#F9FAFB',
-
-          // Gantt specific
           sectionBkgColor: '#F3F4F6',
           sectionBkgColor2: '#E5E7EB',
           altSectionBkgColor: '#FFFFFF',
@@ -82,8 +83,6 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
           doneTaskBorderColor: '#059669',
           critBkgColor: '#EF4444',
           critBorderColor: '#DC2626',
-
-          // Font
           fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           fontSize: '14px',
         },
@@ -119,39 +118,31 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
         setIsLoaded(false);
         container.innerHTML = '';
 
-        // Pre-validate syntax before rendering to catch errors early
-        try {
-          const parseResult = await mermaid.parse(source, { suppressErrors: true });
-          if (!parseResult) {
-            throw new Error('Invalid mermaid syntax');
-          }
-        } catch (parseError) {
-          console.warn('Mermaid parse validation failed:', parseError);
-          throw new Error('Mermaid syntax error');
-        }
+        // Use a unique ID for each render to avoid conflicts
+        const uniqueId = `mermaid-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        
+        const { svg } = await mermaid.render(uniqueId, source);
 
-        const { svg } = await mermaid.render(idRef.current, source);
-
-        // Double-check: Mermaid sometimes returns an "error" SVG instead of throwing
-        if (!svg || /Syntax error|Error|No diagram type detected|UnknownDiagramError|Parse error/i.test(svg)) {
+        // Check for error indicators in the SVG
+        if (!svg || 
+            svg.includes('Syntax error') || 
+            svg.includes('Error') ||
+            svg.includes('Parse error') ||
+            svg.includes('mermaid version') ||
+            svg.includes('UnknownDiagramError')) {
           throw new Error('Mermaid render error');
         }
 
         container.innerHTML = svg;
 
-        // Trigger animations after render
         setTimeout(() => {
           setIsLoaded(true);
-
-          // Animate nodes sequentially
           const nodes = container.querySelectorAll('.node');
           nodes.forEach((node, index) => {
             setTimeout(() => {
               (node as HTMLElement).classList.add('animate-in');
             }, index * 100);
           });
-
-          // Animate edges after nodes
           const edges = container.querySelectorAll('.edgePath');
           edges.forEach((edge, index) => {
             setTimeout(() => {
@@ -159,11 +150,10 @@ export function DiagramRenderer({ diagram }: DiagramRendererProps) {
             }, (nodes.length * 100) + (index * 50));
           });
         }, 100);
-      } catch (error) {
+      } catch {
         setHasRenderError(true);
         setIsLoaded(false);
         container.innerHTML = '';
-        // Silently fail - don't show error to user
       }
     };
 
