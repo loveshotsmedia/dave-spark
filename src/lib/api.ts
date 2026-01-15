@@ -1438,3 +1438,60 @@ export async function getBookingLink(): Promise<string> {
   });
   return data.bookingLink || 'https://calendly.com/dave-wfsadvisory/discovery-meeting';
 }
+
+// ========== EMAIL MANAGEMENT ==========
+export interface Email {
+  id: string;
+  subject: string;
+  from_address: string;
+  from_name: string;
+  snippet: string;
+  received_at: string;
+  category: string;
+  priority: string;
+  is_read: boolean;
+  is_starred: boolean;
+  requires_response: boolean;
+  ai_summary: string;
+  contact?: {
+    first_name: string;
+    last_name: string;
+    company_name: string;
+  };
+}
+
+export async function listEmails(accountId: string, limit = 50): Promise<Email[]> {
+  const data = await daveAPI<{ emails: Email[] }>("email/list", {
+    method: "POST",
+    body: { accountId, limit },
+  });
+  return data.emails || [];
+}
+
+export async function syncEmails(accountId: string): Promise<{ success: boolean }> {
+  return daveAPI("email/sync", {
+    method: "POST",
+    body: { accountId },
+  });
+}
+
+export async function markEmailRead(emailId: string): Promise<void> {
+  await daveAPI("email/mark-read", {
+    method: "POST",
+    body: { emailId },
+  });
+}
+
+export async function starEmail(emailId: string, starred: boolean): Promise<void> {
+  await daveAPI("email/star", {
+    method: "POST",
+    body: { emailId, starred },
+  });
+}
+
+export async function archiveEmail(emailId: string): Promise<void> {
+  await daveAPI("email/archive", {
+    method: "POST",
+    body: { emailId },
+  });
+}

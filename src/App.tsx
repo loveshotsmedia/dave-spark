@@ -14,6 +14,7 @@ import Campaigns from "./pages/Campaigns";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import Cases from "./pages/Cases";
 import TrustBuilderView from "./pages/TrustBuilderView";
+import Inbox from "./pages/Inbox";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/campaigns" element={<Campaigns />} />
           <Route path="/knowledge" element={<KnowledgeBase />} />
           <Route path="/cases" element={<Cases />} />
+          <Route path="/inbox" element={<Inbox />} />
           <Route path="/client/:token" element={<TrustBuilderView />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
