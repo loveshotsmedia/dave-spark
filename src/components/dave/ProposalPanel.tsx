@@ -242,18 +242,29 @@ export function ProposalPanel({
         file_content: cleanedProposal, // Store the cleaned proposal text
       });
 
-      // Store proposal ID for reference
-      if (uploadResult?.id) {
-        setGeneratedProposalId(uploadResult.id);
+      // Store proposal ID for reference (defensive: backend response shapes may vary)
+      const uploadedProposalId =
+        (uploadResult as unknown as { id?: string })?.id ??
+        (uploadResult as unknown as { content?: { id?: string } })?.content?.id ??
+        (uploadResult as unknown as { data?: { id?: string } })?.data?.id;
+
+      if (uploadedProposalId) {
+        setGeneratedProposalId(uploadedProposalId);
       }
 
       toast({
         title: "Proposal Ready!",
-        description: "Download as PDF or send to client",
+        description: "Use the proposal actions in chat to print, email, or view online.",
         duration: 5000,
       });
 
-      onProposalGenerated(cleanedProposal, selectedContact.full_name, diagrams, uploadResult?.id, selectedContact.id);
+      onProposalGenerated(
+        cleanedProposal,
+        selectedContact.full_name,
+        diagrams,
+        uploadedProposalId,
+        selectedContact.id
+      );
       onClose();
       resetForm();
     } catch (error) {
