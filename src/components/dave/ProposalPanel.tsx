@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, FileText, Loader2, BarChart3, Download, ExternalLink, Mail, Copy } from "lucide-react";
+import { Search, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -99,7 +99,6 @@ export function ProposalPanel({
   const [isSearching, setIsSearching] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedProposalId, setGeneratedProposalId] = useState<string | null>(null);
-  const [showActions, setShowActions] = useState(false);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -243,10 +242,9 @@ export function ProposalPanel({
         file_content: cleanedProposal, // Store the cleaned proposal text
       });
 
-      // Store proposal ID for download actions
+      // Store proposal ID for reference
       if (uploadResult?.id) {
         setGeneratedProposalId(uploadResult.id);
-        setShowActions(true);
       }
 
       toast({
@@ -270,67 +268,6 @@ export function ProposalPanel({
     }
   };
 
-  const handleDownloadPDF = () => {
-    if (!generatedProposalId) {
-      toast({
-        title: "Error",
-        description: "No proposal available",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const proposalUrl = `https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api/content/view/${generatedProposalId}`;
-    const printWindow = window.open(proposalUrl, '_blank', 'width=1024,height=768');
-    
-    if (printWindow) {
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-      };
-    }
-
-    toast({
-      title: "Opening Print Dialog",
-      description: "Choose 'Save as PDF' to download",
-    });
-  };
-
-  const handleViewProposal = () => {
-    if (!generatedProposalId) return;
-
-    const viewUrl = `https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api/content/view/${generatedProposalId}`;
-    window.open(viewUrl, '_blank');
-
-    toast({
-      title: "Opening Proposal",
-      description: "Use Ctrl+P to print or save as PDF",
-    });
-  };
-
-  const handleSendToClient = async () => {
-    if (!generatedProposalId) return;
-
-    const proposalUrl = `https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api/content/view/${generatedProposalId}`;
-
-    try {
-      await navigator.clipboard.writeText(proposalUrl);
-      toast({
-        title: "Proposal Link Copied!",
-        description: "Paste this link into an email to share with your client",
-        duration: 8000,
-      });
-    } catch {
-      // Fallback for browsers without clipboard API
-      toast({
-        title: "Share Proposal",
-        description: proposalUrl,
-        duration: 15000,
-      });
-    }
-  };
-
   const resetForm = () => {
     setSearchQuery("");
     setSearchResults([]);
@@ -338,7 +275,6 @@ export function ProposalPanel({
     setProposalType("");
     setAdditionalContext("");
     setGeneratedProposalId(null);
-    setShowActions(false);
   };
 
   return (
@@ -446,46 +382,6 @@ export function ProposalPanel({
           )}
         </Button>
 
-        {/* PDF Download Actions */}
-        {showActions && generatedProposalId && (
-          <div className="mt-6 pt-4 border-t border-zinc-800 space-y-4">
-            <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
-              Proposal Actions
-            </p>
-            <div className="grid gap-2">
-              <Button
-                onClick={handleDownloadPDF}
-                variant="default"
-                size="lg"
-                className="w-full"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download Entire Proposal as PDF
-              </Button>
-              <Button
-                onClick={handleSendToClient}
-                variant="outline"
-                size="lg"
-                className="w-full"
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                Send to Client
-              </Button>
-              <Button
-                onClick={handleViewProposal}
-                variant="ghost"
-                size="lg"
-                className="w-full"
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                View Full Page
-              </Button>
-            </div>
-            <p className="text-xs text-zinc-600">
-              Click "Download Entire Proposal as PDF" and choose "Save as PDF" from the print dialog
-            </p>
-          </div>
-        )}
       </div>
     </SlidePanel>
   );
