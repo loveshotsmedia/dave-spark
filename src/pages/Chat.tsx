@@ -72,8 +72,9 @@ export default function Chat() {
   // Generated diagrams for display
   const [proposalDiagrams, setProposalDiagrams] = useState<DiagramData[]>();
   
-  // Store proposal ID for download/share actions
+  // Store proposal ID and contact info for download/share actions
   const [lastProposalId, setLastProposalId] = useState<string | null>(null);
+  const [lastProposalContactId, setLastProposalContactId] = useState<string | null>(null);
   const [lastProposalContactName, setLastProposalContactName] = useState<string>('');
 
   // Load conversations on mount and when messages change
@@ -124,7 +125,7 @@ export default function Chat() {
     setIsProposalOpen(true);
   };
 
-  const handleProposalGenerated = (proposal: string, contactName: string, diagrams?: DiagramData[], proposalId?: string) => {
+  const handleProposalGenerated = (proposal: string, contactName: string, diagrams?: DiagramData[], proposalId?: string, contactId?: string) => {
     sendMessage(`Generated proposal for ${contactName}:\n\n${proposal}`, undefined);
     if (diagrams && diagrams.length > 0) {
       setProposalDiagrams(diagrams);
@@ -132,6 +133,7 @@ export default function Chat() {
     if (proposalId) {
       setLastProposalId(proposalId);
       setLastProposalContactName(contactName);
+      setLastProposalContactId(contactId || selectedContactId || null);
     }
   };
 
@@ -218,11 +220,15 @@ export default function Chat() {
                 />
               ))}
               
-              {/* Proposal Actions - Download/Send */}
+              {/* Proposal Actions - Print/Send */}
               {lastProposalId && (
                 <ProposalActions 
-                  proposalId={lastProposalId} 
+                  proposalId={lastProposalId}
+                  contactId={lastProposalContactId || undefined}
                   contactName={lastProposalContactName}
+                  onSendComplete={() => {
+                    // Optionally clear after sending
+                  }}
                 />
               )}
               
@@ -236,6 +242,7 @@ export default function Chat() {
                       onClick={() => {
                         setProposalDiagrams([]);
                         setLastProposalId(null);
+                        setLastProposalContactId(null);
                         setLastProposalContactName('');
                       }}
                       className="ml-auto text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-200"
