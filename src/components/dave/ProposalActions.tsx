@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Printer, Send, ExternalLink, Loader2 } from "lucide-react";
+import { Printer, Send, ExternalLink, Loader2, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
 
 interface ProposalActionsProps {
   proposalId: string;
@@ -127,59 +128,93 @@ export function ProposalActions({
   };
 
   return (
-    <div className="mt-4 pt-4 border-t border-zinc-800 space-y-3">
-      <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">
-        {contactName ? `Proposal for ${contactName}` : 'Proposal Actions'}
-      </p>
+    <motion.div 
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="mt-4 relative overflow-hidden"
+    >
+      {/* Glowing border effect */}
+      <div className="absolute inset-0 rounded-sm bg-gradient-to-r from-emerald-500/20 via-primary/20 to-emerald-500/20 blur-sm" />
       
-      <div className="flex flex-wrap gap-2">
-        <Button
-          onClick={handlePrintProposal}
-          variant="default"
-          size="sm"
-          className="gap-2"
-          disabled={isPrinting}
-        >
-          {isPrinting ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Printer className="h-3.5 w-3.5" />
-          )}
-          Print Entire Proposal
-        </Button>
-
-        {contactId && (
-          <Button
-            onClick={handleSendToClient}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            disabled={isSending}
+      <div className="relative bg-zinc-950/80 backdrop-blur-md border border-emerald-500/30 rounded-sm p-4 space-y-4">
+        {/* Header with success indicator */}
+        <div className="flex items-center gap-3">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="flex items-center justify-center w-8 h-8 rounded-sm bg-emerald-500/10 border border-emerald-500/30"
           >
-            {isSending ? (
+            <FileCheck className="h-4 w-4 text-emerald-400" strokeWidth={1.5} />
+          </motion.div>
+          <div>
+            <p className="text-xs font-mono uppercase tracking-widest text-emerald-400">
+              Proposal Ready
+            </p>
+            {contactName && (
+              <p className="text-sm text-zinc-300 mt-0.5">
+                {contactName}
+              </p>
+            )}
+          </div>
+        </div>
+        
+        {/* Action buttons */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex flex-wrap gap-2"
+        >
+          <Button
+            onClick={handlePrintProposal}
+            variant="default"
+            size="sm"
+            className="gap-2 bg-primary hover:bg-primary/90"
+            disabled={isPrinting}
+          >
+            {isPrinting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Send className="h-3.5 w-3.5" />
+              <Printer className="h-3.5 w-3.5" strokeWidth={1.5} />
             )}
-            Send to Client
+            Print / Download PDF
           </Button>
-        )}
 
-        <Button
-          onClick={handleViewProposal}
-          variant="ghost"
-          size="sm"
-          className="gap-2"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          View Full Page
-        </Button>
+          {contactId && (
+            <Button
+              onClick={handleSendToClient}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/10"
+              disabled={isSending}
+            >
+              {isSending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" strokeWidth={1.5} />
+              )}
+              Email to Client
+            </Button>
+          )}
+
+          <Button
+            onClick={handleViewProposal}
+            variant="ghost"
+            size="sm"
+            className="gap-2 text-zinc-400 hover:text-white"
+          >
+            <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
+            View Online
+          </Button>
+        </motion.div>
+
+        {/* Helper text */}
+        <p className="text-xs text-zinc-500 font-mono">
+          Print opens the full proposal with diagrams. Choose "Save as PDF" to download.
+        </p>
       </div>
-
-      <p className="text-xs text-zinc-600">
-        Print: Opens complete proposal with all diagrams. Choose "Save as PDF" from print dialog.
-        {contactId && <> Send: Emails proposal link to client.</>}
-      </p>
-    </div>
+    </motion.div>
   );
 }
