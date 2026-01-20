@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Printer, Send, ExternalLink, Loader2, FileCheck, Download, Mail } from "lucide-react";
+import { Printer, Send, ExternalLink, Loader2, FileCheck, Download, Mail, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { getContact, sendEmail, type DiagramData } from "@/lib/api";
 import { buildProposalMarkdownWithDiagrams, safeFilename } from "@/lib/proposalMarkdownExport";
+import JSZip from "jszip";
 
 interface ProposalActionsProps {
   proposalId?: string;
@@ -26,6 +27,7 @@ export function ProposalActions({
   const [isSending, setIsSending] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isSendingMarkdown, setIsSendingMarkdown] = useState(false);
+  const [isExportingPackage, setIsExportingPackage] = useState(false);
 
   const hasMarkdown = !!(proposalMarkdown || "").trim();
 
@@ -69,10 +71,83 @@ export function ProposalActions({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast({
-      title: "Downloaded",
-      description: "Saved full proposal as Markdown (including diagrams).",
-    });
+    toast({ title: "Downloaded", description: "Saved full proposal as Markdown." });
+  };
+
+  const handleExportPackage = async () => {
+    if (!hasMarkdown) {
+      toast({
+        title: "Nothing to export",
+        description: "Generate a proposal first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExportingPackage(true);
+
+    try {
+      const zip = new JSZip();
+      const md = buildMarkdown();
+      const baseName = contactName ? `proposal-${safeFilename(contactName)}` : "proposal";
+
+      // Add markdown file
+      zip.file(`${baseName}.md`, md);
+
+      // Extract SVGs from rendered Mermaid diagrams in the DOM
+      const svgElements = document.querySelectorAll('[data-diagram-id] svg');
+      svgElements.forEach((svg, index) => {
+        const diagramId = svg.closest('[data-diagram-id]')?.getAttribute('data-diagram-id') || `diagram-${index + 1}`;
+        const svgString = new XMLSerializer().serializeToString(svg);
+        const svgWithXmlns = svgString.includes('xmlns') 
+          ? svgString 
+          : svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+        zip.file(`diagrams/${safeFilename(diagramId)}.svg`, svgWithXmlns);
+      });
+
+      // If no DOM SVGs found, try to render from diagram data
+      if (svgElements.length === 0 && diagrams && diagrams.length > 0) {
+        const mermaid = await import("mermaid");
+        mermaid.default.initialize({ startOnLoad: false, theme: "default" });
+
+        for (let i = 0; i < diagrams.length; i++) {
+          const diagram = diagrams[i];
+          if (diagram.format === 'mermaid' && diagram.content) {
+            try {
+              const { svg } = await mermaid.default.render(`export-diagram-${i}`, diagram.content);
+              const filename = safeFilename(diagram.title || `diagram-${i + 1}`);
+              zip.file(`diagrams/${filename}.svg`, svg);
+            } catch (err) {
+              console.warn(`Failed to render diagram ${i}:`, err);
+            }
+          }
+        }
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${baseName}-package.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Package Exported",
+        description: "Downloaded ZIP with Markdown + SVG diagrams.",
+      });
+    } catch (error) {
+      console.error("Export package error:", error);
+      toast({
+        title: "Export Failed",
+        description: "Could not create the package. Try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExportingPackage(false);
+    }
   };
 
   const handleEmailMarkdown = async () => {
@@ -154,10 +229,7 @@ export function ProposalActions({
 
     setIsPrinting(true);
 
-    // Open backend-rendered page with auto-print
     const printUrl = `https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api/content/view/${proposalId}?print=true`;
-
-    // Open in new window
     const printWindow = window.open(printUrl, '_blank');
 
     if (!printWindow) {
@@ -176,7 +248,6 @@ export function ProposalActions({
       duration: 6000
     });
 
-    // Reset state after a delay
     setTimeout(() => setIsPrinting(false), 2000);
   };
 
@@ -197,9 +268,7 @@ export function ProposalActions({
         'https://icopqfohbrdsdqgpajdy.supabase.co/functions/v1/dave-api',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'proposals/send',
             proposalId,
@@ -217,10 +286,7 @@ export function ProposalActions({
           description: `Email sent to ${contactName || 'client'} successfully`,
           duration: 5000
         });
-
-        if (onSendComplete) {
-          onSendComplete();
-        }
+        onSendComplete?.();
       } else {
         throw new Error(result.error || 'Failed to send proposal');
       }
@@ -256,11 +322,9 @@ export function ProposalActions({
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="mt-4 relative overflow-hidden"
     >
-      {/* Glowing border effect */}
       <div className="absolute inset-0 rounded-sm bg-gradient-to-r from-emerald-500/20 via-primary/20 to-emerald-500/20 blur-sm" />
       
       <div className="relative bg-zinc-950/80 backdrop-blur-md border border-emerald-500/30 rounded-sm p-4 space-y-4">
-        {/* Header with success indicator */}
         <div className="flex items-center gap-3">
           <motion.div
             initial={{ scale: 0 }}
@@ -275,14 +339,11 @@ export function ProposalActions({
               Proposal Ready
             </p>
             {contactName && (
-              <p className="text-sm text-zinc-300 mt-0.5">
-                {contactName}
-              </p>
+              <p className="text-sm text-zinc-300 mt-0.5">{contactName}</p>
             )}
           </div>
         </div>
         
-        {/* Action buttons */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -302,6 +363,21 @@ export function ProposalActions({
               <Printer className="h-3.5 w-3.5" strokeWidth={1.5} />
             )}
             Print / Download PDF
+          </Button>
+
+          <Button
+            onClick={handleExportPackage}
+            variant="outline"
+            size="sm"
+            className="gap-2 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/10"
+            disabled={isExportingPackage || !hasMarkdown}
+          >
+            {isExportingPackage ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Package className="h-3.5 w-3.5" strokeWidth={1.5} />
+            )}
+            Export Package
           </Button>
 
           <Button
@@ -360,9 +436,8 @@ export function ProposalActions({
           </Button>
         </motion.div>
 
-        {/* Helper text */}
         <p className="text-xs text-zinc-500 font-mono">
-          Print opens the full proposal with diagrams. Choose "Save as PDF" to download.
+          Export Package downloads a ZIP with Markdown + SVG diagrams.
         </p>
       </div>
     </motion.div>
