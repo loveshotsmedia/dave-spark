@@ -76,6 +76,7 @@ export default function Chat() {
   const [lastProposalId, setLastProposalId] = useState<string | null>(null);
   const [lastProposalContactId, setLastProposalContactId] = useState<string | null>(null);
   const [lastProposalContactName, setLastProposalContactName] = useState<string>('');
+  const [lastProposalMarkdown, setLastProposalMarkdown] = useState<string | null>(null);
 
   // Load conversations on mount and when messages change
   useEffect(() => {
@@ -130,6 +131,7 @@ export default function Chat() {
     if (diagrams && diagrams.length > 0) {
       setProposalDiagrams(diagrams);
     }
+    setLastProposalMarkdown(proposal);
     if (proposalId) {
       setLastProposalId(proposalId);
       setLastProposalContactName(contactName);
@@ -220,12 +222,14 @@ export default function Chat() {
                 />
               ))}
               
-              {/* Proposal Actions - Print/Send */}
-              {lastProposalId && (
+              {/* Proposal Actions - Print/Send/Export */}
+              {(lastProposalId || lastProposalMarkdown) && (
                 <ProposalActions 
-                  proposalId={lastProposalId}
+                  proposalId={lastProposalId || undefined}
                   contactId={lastProposalContactId || undefined}
                   contactName={lastProposalContactName}
+                  proposalMarkdown={lastProposalMarkdown || undefined}
+                  diagrams={proposalDiagrams}
                   onSendComplete={() => {
                     // Optionally clear after sending
                   }}
@@ -244,6 +248,7 @@ export default function Chat() {
                         setLastProposalId(null);
                         setLastProposalContactId(null);
                         setLastProposalContactName('');
+                         setLastProposalMarkdown(null);
                       }}
                       className="ml-auto text-xs text-zinc-600 hover:text-zinc-400 transition-colors duration-200"
                     >

@@ -1,24 +1,146 @@
 import { useState } from "react";
-import { Printer, Send, ExternalLink, Loader2, FileCheck } from "lucide-react";
+import { Printer, Send, ExternalLink, Loader2, FileCheck, Download, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { getContact, sendEmail, type DiagramData } from "@/lib/api";
+import { buildProposalMarkdownWithDiagrams, safeFilename } from "@/lib/proposalMarkdownExport";
 
 interface ProposalActionsProps {
-  proposalId: string;
+  proposalId?: string;
   contactId?: string;
   contactName?: string;
   onSendComplete?: () => void;
+  proposalMarkdown?: string;
+  diagrams?: DiagramData[];
 }
 
 export function ProposalActions({ 
   proposalId, 
   contactId, 
   contactName,
-  onSendComplete 
+  onSendComplete,
+  proposalMarkdown,
+  diagrams,
 }: ProposalActionsProps) {
   const [isSending, setIsSending] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isSendingMarkdown, setIsSendingMarkdown] = useState(false);
+
+  const hasMarkdown = !!(proposalMarkdown || "").trim();
+
+  const escapeHtml = (unsafe: string) =>
+    unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  const buildMarkdown = () =>
+    buildProposalMarkdownWithDiagrams({
+      title: contactName ? `Proposal - ${contactName}` : "Proposal",
+      proposalMarkdown: proposalMarkdown || "",
+      diagrams,
+    });
+
+  const handleDownloadMarkdown = () => {
+    if (!hasMarkdown) {
+      toast({
+        title: "Nothing to export",
+        description: "Generate a proposal first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const md = buildMarkdown();
+    const filename = safeFilename(
+      contactName ? `proposal-${contactName}.md` : "proposal.md"
+    );
+
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Downloaded",
+      description: "Saved full proposal as Markdown (including diagrams).",
+    });
+  };
+
+  const handleEmailMarkdown = async () => {
+    if (!contactId) {
+      toast({
+        title: "Missing client",
+        description: "Select a client to email this proposal.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!hasMarkdown) {
+      toast({
+        title: "Nothing to send",
+        description: "Generate a proposal first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingMarkdown(true);
+    try {
+      const { contact } = await getContact(contactId);
+      const email = (contact.email || "").trim();
+      if (!email) {
+        toast({
+          title: "No email address",
+          description: "This contact does not have an email on file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const md = buildMarkdown();
+      const subject = contactName
+        ? `Proposal (Markdown) - ${contactName}`
+        : "Proposal (Markdown)";
+
+      const html = `
+        <p>Hi${contactName ? ` ${escapeHtml(contactName)}` : ""},</p>
+        <p>Below is your full proposal in <strong>Markdown</strong> (including the Mermaid diagram blocks).</p>
+        <p style="margin:0 0 8px 0; color:#666; font-size:12px;">Tip: copy into a Markdown viewer that supports Mermaid to render the diagrams.</p>
+        <pre style="white-space:pre-wrap; word-wrap:break-word; padding:12px; background:#0b0b0b; color:#e5e7eb; border-radius:8px; border:1px solid #222;">${escapeHtml(md)}</pre>
+      `;
+
+      const result = await sendEmail({ to: email, subject, html });
+      if (!result.success) {
+        throw new Error(result.error || "Failed to send");
+      }
+
+      toast({
+        title: "Sent",
+        description: `Markdown proposal emailed to ${email}`,
+        duration: 5000,
+      });
+
+      onSendComplete?.();
+    } catch (error) {
+      console.error("Email markdown error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to email Markdown proposal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingMarkdown(false);
+    }
+  };
 
   const handlePrintProposal = () => {
     if (!proposalId) {
@@ -182,6 +304,17 @@ export function ProposalActions({
             Print / Download PDF
           </Button>
 
+          <Button
+            onClick={handleDownloadMarkdown}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={!hasMarkdown}
+          >
+            <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Download Markdown
+          </Button>
+
           {contactId && (
             <Button
               onClick={handleSendToClient}
@@ -196,6 +329,23 @@ export function ProposalActions({
                 <Send className="h-3.5 w-3.5" strokeWidth={1.5} />
               )}
               Email to Client
+            </Button>
+          )}
+
+          {contactId && (
+            <Button
+              onClick={handleEmailMarkdown}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={isSendingMarkdown || !hasMarkdown}
+            >
+              {isSendingMarkdown ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Mail className="h-3.5 w-3.5" strokeWidth={1.5} />
+              )}
+              Email Markdown
             </Button>
           )}
 
