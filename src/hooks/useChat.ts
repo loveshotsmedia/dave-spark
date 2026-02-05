@@ -193,8 +193,7 @@ export function useChat() {
     setMessages((prev) => [...prev, userMessage, streamingMessage]);
     setIsLoading(true);
     setLoadingPhase('thinking');
-<<<<<<< Updated upstream
-    loadingMessageIdRef.current = loadingMessageId;
+    loadingMessageIdRef.current = streamingMessageId;
     setWorkingMessageIndex(0);
     streamedContentRef.current = '';
 
@@ -207,9 +206,6 @@ export function useChat() {
     phaseTimeoutRef.current = setTimeout(() => {
       setLoadingPhase((current) => current === 'thinking' ? 'working' : current);
     }, 2000);
-=======
-    loadingMessageIdRef.current = streamingMessageId;
->>>>>>> Stashed changes
 
     try {
       // Progress callback for file extraction
@@ -223,7 +219,6 @@ export function useChat() {
         );
       };
 
-<<<<<<< Updated upstream
       // Streaming callback - update message in real-time as content arrives
       const onStream = (chunk: string) => {
         // Clear phase timeout on first chunk
@@ -231,7 +226,7 @@ export function useChat() {
           clearTimeout(phaseTimeoutRef.current);
           phaseTimeoutRef.current = null;
         }
-        
+
         // Clear working interval
         if (workingIntervalRef.current) {
           clearInterval(workingIntervalRef.current);
@@ -243,21 +238,21 @@ export function useChat() {
 
         // Accumulate content
         streamedContentRef.current += chunk;
-        
+
         // Clean any working message artifacts from streamed content in real-time
         const cleanedContent = cleanStreamingArtifacts(streamedContentRef.current);
-        
+
         // Update message with streamed content - clear workingMessage to prevent artifacts
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === loadingMessageId
-              ? { 
-                  ...m, 
+            m.id === streamingMessageId
+              ? {
+                  ...m,
                   loadingPhase: 'streaming',
                   isLoading: true,
                   workingMessage: undefined,
                   content: cleanedContent,
-                  typedContent: cleanedContent 
+                  typedContent: cleanedContent
                 }
               : m
           )
@@ -270,36 +265,6 @@ export function useChat() {
         .map(m => ({ role: m.role, content: m.content }));
 
       const response = await chat(content, files, onProgress, apiMessages, onStream);
-=======
-      // Convert messages to API format (exclude welcome and loading messages)
-      const apiMessages: APIChatMessage[] = messages
-        .filter(m => !m.isLoading && m.id !== "welcome" && m.content.trim() !== "")
-        .map(m => ({ role: m.role, content: m.content }));
->>>>>>> Stashed changes
-
-      // Streaming callback for real-time text display
-      let hasStreamedContent = false;
-      const onStream = (chunk: string) => {
-        if (!hasStreamedContent) {
-          // First chunk - switch to streaming phase
-          setLoadingPhase('typing');
-          hasStreamedContent = true;
-        }
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === streamingMessageId
-              ? {
-                  ...m,
-                  content: (m.content || "") + chunk,
-                  typedContent: (m.content || "") + chunk,
-                  loadingPhase: 'typing'
-                }
-              : m
-          )
-        );
-      };
-
-      const response = await chat(content, files, onProgress, apiMessages, onStream);
 
       // Show toast if documents were uploaded
       if (response.documentsUploaded && response.documentsUploaded > 0) {
@@ -309,12 +274,9 @@ export function useChat() {
         });
       }
 
-<<<<<<< Updated upstream
       // Clean the response of any working message artifacts
       const cleanedResponse = cleanStreamingArtifacts(response.response);
 
-=======
->>>>>>> Stashed changes
       // Finalize the message
       const finalMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -343,7 +305,6 @@ export function useChat() {
       setIsLoading(false);
       setLoadingPhase('idle');
       loadingMessageIdRef.current = null;
-<<<<<<< Updated upstream
       streamedContentRef.current = '';
       if (phaseTimeoutRef.current) {
         clearTimeout(phaseTimeoutRef.current);
@@ -351,8 +312,6 @@ export function useChat() {
       if (workingIntervalRef.current) {
         clearInterval(workingIntervalRef.current);
       }
-=======
->>>>>>> Stashed changes
     }
   }, [messages]);
 
