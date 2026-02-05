@@ -168,7 +168,7 @@ export function useChat() {
     let displayContent = content;
     if (files && files.length > 0) {
       const fileNames = files.map(f => f.name).join(", ");
-      displayContent = content 
+      displayContent = content
         ? `${content}\n\n📎 Attached: ${fileNames}`
         : `📎 Attached: ${fileNames}`;
     }
@@ -180,9 +180,9 @@ export function useChat() {
       timestamp: new Date(),
     };
 
-    const loadingMessageId = `loading-${Date.now()}`;
-    const loadingMessage: ChatMessage = {
-      id: loadingMessageId,
+    const streamingMessageId = `streaming-${Date.now()}`;
+    const streamingMessage: ChatMessage = {
+      id: streamingMessageId,
       role: "assistant",
       content: "",
       timestamp: new Date(),
@@ -190,9 +190,10 @@ export function useChat() {
       loadingPhase: 'thinking',
     };
 
-    setMessages((prev) => [...prev, userMessage, loadingMessage]);
+    setMessages((prev) => [...prev, userMessage, streamingMessage]);
     setIsLoading(true);
     setLoadingPhase('thinking');
+<<<<<<< Updated upstream
     loadingMessageIdRef.current = loadingMessageId;
     setWorkingMessageIndex(0);
     streamedContentRef.current = '';
@@ -206,19 +207,23 @@ export function useChat() {
     phaseTimeoutRef.current = setTimeout(() => {
       setLoadingPhase((current) => current === 'thinking' ? 'working' : current);
     }, 2000);
+=======
+    loadingMessageIdRef.current = streamingMessageId;
+>>>>>>> Stashed changes
 
     try {
-      // Progress callback to update loading message
+      // Progress callback for file extraction
       const onProgress = (progress: ExtractionProgress) => {
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === loadingMessageId
+            m.id === streamingMessageId
               ? { ...m, extractionProgress: progress }
               : m
           )
         );
       };
 
+<<<<<<< Updated upstream
       // Streaming callback - update message in real-time as content arrives
       const onStream = (chunk: string) => {
         // Clear phase timeout on first chunk
@@ -265,8 +270,38 @@ export function useChat() {
         .map(m => ({ role: m.role, content: m.content }));
 
       const response = await chat(content, files, onProgress, apiMessages, onStream);
+=======
+      // Convert messages to API format (exclude welcome and loading messages)
+      const apiMessages: APIChatMessage[] = messages
+        .filter(m => !m.isLoading && m.id !== "welcome" && m.content.trim() !== "")
+        .map(m => ({ role: m.role, content: m.content }));
+>>>>>>> Stashed changes
 
-      // Show toast if documents were uploaded to knowledge base
+      // Streaming callback for real-time text display
+      let hasStreamedContent = false;
+      const onStream = (chunk: string) => {
+        if (!hasStreamedContent) {
+          // First chunk - switch to streaming phase
+          setLoadingPhase('typing');
+          hasStreamedContent = true;
+        }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === streamingMessageId
+              ? {
+                  ...m,
+                  content: (m.content || "") + chunk,
+                  typedContent: (m.content || "") + chunk,
+                  loadingPhase: 'typing'
+                }
+              : m
+          )
+        );
+      };
+
+      const response = await chat(content, files, onProgress, apiMessages, onStream);
+
+      // Show toast if documents were uploaded
       if (response.documentsUploaded && response.documentsUploaded > 0) {
         toast({
           title: "Document added to knowledge base",
@@ -274,11 +309,14 @@ export function useChat() {
         });
       }
 
+<<<<<<< Updated upstream
       // Clean the response of any working message artifacts
       const cleanedResponse = cleanStreamingArtifacts(response.response);
 
+=======
+>>>>>>> Stashed changes
       // Finalize the message
-      const assistantMessage: ChatMessage = {
+      const finalMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
         content: cleanedResponse,
@@ -286,10 +324,11 @@ export function useChat() {
       };
 
       setMessages((prev) =>
-        prev.filter((m) => m.id !== loadingMessageId).concat(assistantMessage)
+        prev.filter((m) => m.id !== streamingMessageId).concat(finalMessage)
       );
 
     } catch (error) {
+      console.error("Chat error:", error);
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         role: "assistant",
@@ -298,12 +337,13 @@ export function useChat() {
       };
 
       setMessages((prev) =>
-        prev.filter((m) => m.id !== loadingMessageId).concat(errorMessage)
+        prev.filter((m) => m.id !== streamingMessageId).concat(errorMessage)
       );
     } finally {
       setIsLoading(false);
       setLoadingPhase('idle');
       loadingMessageIdRef.current = null;
+<<<<<<< Updated upstream
       streamedContentRef.current = '';
       if (phaseTimeoutRef.current) {
         clearTimeout(phaseTimeoutRef.current);
@@ -311,6 +351,8 @@ export function useChat() {
       if (workingIntervalRef.current) {
         clearInterval(workingIntervalRef.current);
       }
+=======
+>>>>>>> Stashed changes
     }
   }, [messages]);
 

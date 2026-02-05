@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { PageTransition } from "@/components/effects/PageTransition";
 import { Header } from "@/components/dave/Header";
+import { FileUploadZone } from "@/components/dave/FileUploadZone";
 import {
   listKnowledge,
   searchKnowledge,
@@ -743,26 +744,10 @@ export default function KnowledgeBase() {
                 </CardContent>
               </Card>
 
-              {/* File Upload - Coming Soon */}
-              <Card className="mt-4 border-dashed opacity-60">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <File className="h-5 w-5" />
-                    File Upload
-                    <Badge variant="secondary">Coming Soon</Badge>
-                  </CardTitle>
-                  <CardDescription>
-                    Drag & drop PDF, DOCX, TXT, or MD files to auto-extract text
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground">
-                    <Upload className="h-8 w-8 mx-auto mb-2" />
-                    <p>Drag files here or click to browse</p>
-                    <p className="text-xs mt-1">PDF, DOCX, TXT, MD accepted</p>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* File Upload */}
+              <div className="mt-4">
+                <FileUploadZone onUploadComplete={loadEntries} />
+              </div>
             </TabsContent>
 
             <TabsContent value="bulk">

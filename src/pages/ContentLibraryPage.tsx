@@ -1082,9 +1082,13 @@ export default function ContentLibraryPage() {
                 {/* Preview */}
                 <div className="rounded-lg border p-3 bg-muted/50">
                   <p className="text-sm text-muted-foreground mb-1">Preview:</p>
-                  <p className="text-sm">
+                  <p className="text-sm whitespace-pre-wrap">
                     {smsMessage || "Check out this content I thought you'd find helpful:"}{" "}
                     <span className="text-primary font-medium">{selectedContent?.title}</span>
+                    {"\n\n"}
+                    <span className="text-blue-600 underline break-all">
+                      {selectedContent?.url || (selectedContent?.storage_path ? "[Secure download link]" : "[⚠️ No link - please add a URL]")}
+                    </span>
                   </p>
                 </div>
               </>

@@ -168,6 +168,7 @@ export async function chat(
     });
   }
 
+<<<<<<< Updated upstream
   // Build message history with conversation context
   let messages: ChatMessage[];
 
@@ -182,6 +183,16 @@ export async function chat(
     ];
   } else {
     // Fallback to single message if no history
+=======
+  // Build messages with conversation history
+  let messages: ChatMessage[];
+  if (conversationHistory && conversationHistory.length > 0) {
+    messages = [
+      ...conversationHistory.filter(m => m.content.trim() !== "" && !m.content.includes("Good morning, Dave")),
+      { role: "user", content: message }
+    ];
+  } else {
+>>>>>>> Stashed changes
     messages = [{ role: "user", content: message }];
   }
 
@@ -190,6 +201,7 @@ export async function chat(
     messages[messages.length - 1].content = `I just uploaded "${fileNames}". ${message}`;
   }
 
+<<<<<<< Updated upstream
   // If streaming callback provided, use streaming endpoint
   if (onStream) {
     const response = await fetch(`${DAVE_API_URL}/chat/stream`, {
@@ -264,6 +276,65 @@ export async function chat(
   }
 
   // Non-streaming fallback
+=======
+  // Try streaming if callback provided
+  if (onStream) {
+    try {
+      const streamResponse = await fetch(`${DAVE_API_URL}/chat/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": DAVE_API_ANON_KEY,
+          "Authorization": `Bearer ${DAVE_API_ANON_KEY}`,
+          "x-owner-auth": AUTH_HEADER,
+        },
+        body: JSON.stringify({
+          messages,
+          files: processedFiles.length > 0 ? processedFiles : undefined,
+        }),
+      });
+
+      if (streamResponse.ok && streamResponse.body) {
+        const reader = streamResponse.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') break;
+
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.type === 'text' && parsed.content) {
+                  onStream(parsed.content);
+                  fullResponse += parsed.content;
+                } else if (parsed.type === 'done' && parsed.fullResponse) {
+                  fullResponse = parsed.fullResponse;
+                }
+              } catch (e) {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+
+        return { response: fullResponse, documentsUploaded };
+      }
+    } catch (streamError) {
+      console.warn('Streaming failed, falling back to regular endpoint:', streamError);
+    }
+  }
+
+  // Fallback to regular endpoint
+>>>>>>> Stashed changes
   const response = await daveAPI<ChatResponse>("chat", {
     method: "POST",
     body: {
@@ -271,7 +342,7 @@ export async function chat(
       files: processedFiles.length > 0 ? processedFiles : undefined,
     },
   });
-  
+
   return { ...response, documentsUploaded };
 }
 
