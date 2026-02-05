@@ -6,6 +6,56 @@
 
 ## Error Log
 
+### Error #004: Duplicate state declarations in ContentLibrary.tsx (Feb 5, 2026)
+
+**Discovered During:** Railway production deployment attempt (third failure)
+
+**Error Manifestation:**
+- **Symptom:** Build failed with error `The symbol "previewModalOpen" has already been declared` (+ 3 more)
+- **Affected Component:** src/components/dave/ContentLibrary.tsx:107-108
+- **Expected Behavior:** Clean build and successful Railway deployment
+- **Actual Behavior:** Build process crashes during Vite esbuild compilation
+
+**Root Cause:**
+Duplicate state variable declarations in ContentLibrary.tsx. The variables `previewModalOpen`, `setPreviewModalOpen`, `previewContent`, and `setPreviewContent` were declared twice:
+- First declaration: lines 97-98
+- Duplicate declaration: lines 107-108
+
+This is a JavaScript scoping error - you cannot declare the same variable twice in the same scope. Likely caused by copy-paste duplication or incomplete merge resolution.
+
+```typescript
+// PROBLEMATIC CODE (duplicate declarations)
+// Line 97-98:
+const [previewModalOpen, setPreviewModalOpen] = useState(false);
+const [previewContent, setPreviewContent] = useState<ContentItem | null>(null);
+
+// Line 107-108 (DUPLICATE - ERROR):
+const [previewModalOpen, setPreviewModalOpen] = useState(false);
+const [previewContent, setPreviewContent] = useState<ContentItem | null>(null);
+```
+
+**Fix Required:**
+- File: src/components/dave/ContentLibrary.tsx
+- Lines: 107-108
+- Change: Remove duplicate declarations (keep only lines 97-98)
+- Reason: Cannot have duplicate variable declarations in same scope
+
+**Status:** ✅ FIXED (Commit pending)
+
+**Fix Applied (Commit pending):**
+- Removed duplicate state declarations at lines 107-108
+- Kept original declarations at lines 97-98
+- No functional changes - just cleanup
+
+**Impact:**
+- **Before Fix:** Railway deployment blocked (third consecutive build failure)
+- **After Fix:** Railway can rebuild successfully, no duplicate declarations
+- **Cascading Effects:** None - isolated build-time error
+
+**Pattern Observed:** This is the 4th build-blocking error in sequence. All caught by Railway's build process before reaching production. Alien Debugging Protocol is proving valuable for systematic documentation.
+
+---
+
 ### Error #003: Merge conflict in ChatMessage.tsx blocking Railway deployment (Feb 5, 2026)
 
 **Discovered During:** Railway production deployment attempt (second failure)

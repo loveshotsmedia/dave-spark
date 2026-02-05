@@ -103,10 +103,6 @@ export function ContentLibrary({ isOpen, onClose }: ContentLibraryProps) {
   const [isSending, setIsSending] = useState(false);
   const [isSearchingContacts, setIsSearchingContacts] = useState(false);
 
-  // Preview modal state
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  const [previewContent, setPreviewContent] = useState<ContentItem | null>(null);
-
   // Fetch content on search/filter change
   useEffect(() => {
     const debounce = setTimeout(async () => {
