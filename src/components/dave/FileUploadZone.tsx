@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { uploadContentFile } from "@/lib/api";
+import { uploadContent } from "@/lib/api";
 
 interface FileUploadZoneProps {
   onUploadComplete?: () => void;
@@ -124,7 +124,7 @@ export function FileUploadZone({ onUploadComplete }: FileUploadZoneProps) {
       ));
 
       // Upload to API
-      const result = await uploadContentFile({
+      const result = await uploadContent({
         file_content: base64Content,
         file_name: uploadFile.file.name,
         title: uploadFile.file.name.replace(/\.[^/.]+$/, ""), // Remove extension
@@ -140,8 +140,8 @@ export function FileUploadZone({ onUploadComplete }: FileUploadZoneProps) {
             ...f,
             status: 'success',
             progress: 100,
-            title: result.title || uploadFile.file.name,
-            tags: result.tags || [],
+            title: uploadFile.file.name,
+            tags: [],
             uploadedId: result.id
           } : f
         ));

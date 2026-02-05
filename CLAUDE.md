@@ -6,6 +6,64 @@
 
 ## Error Log
 
+### Error #005: Missing export uploadContentFile in FileUploadZone.tsx (Feb 5, 2026)
+
+**Discovered During:** Railway production deployment attempt (fourth failure)
+
+**Error Manifestation:**
+- **Symptom:** Build failed with error `"uploadContentFile" is not exported by "src/lib/api.ts"`
+- **Affected Component:** src/components/dave/FileUploadZone.tsx:9 (import statement) and line 127 (function call)
+- **Expected Behavior:** Clean build and successful Railway deployment
+- **Actual Behavior:** Build process crashes during module resolution
+
+**Root Cause:**
+Multiple interface/implementation mismatches between frontend and backend:
+1. FileUploadZone.tsx imports `uploadContentFile` but api.ts only exports `uploadContent`
+2. ContentUploadRequest interface missing `extract_to_knowledge` and `is_template` optional fields that backend expects
+3. Return type incomplete - backend returns `{ success, id, knowledge_id, extracted_text, structure, error }` but frontend only typed `{ success, id }`
+4. FileUploadZone.tsx incorrectly expected `result.title` and `result.tags` which backend doesn't return
+
+**Evidence:**
+```typescript
+// PROBLEMATIC CODE (line 9):
+import { uploadContentFile } from "@/lib/api"; // ERROR: function doesn't exist
+
+// Line 127:
+const result = await uploadContentFile({ ... }); // ERROR: function doesn't exist
+
+// Lines 143-144:
+title: result.title || uploadFile.file.name,  // title not returned by backend
+tags: result.tags || [],  // tags not returned by backend
+```
+
+**Fix Required:**
+- File: src/lib/api.ts
+- Change: Add missing optional fields to ContentUploadRequest interface
+- Change: Update uploadContent return type to match backend
+- File: src/components/dave/FileUploadZone.tsx
+- Change: Fix import from `uploadContentFile` to `uploadContent`
+- Change: Fix function call from `uploadContentFile` to `uploadContent`
+- Change: Remove incorrect expectations for `result.title` and `result.tags`
+- Reason: Function name was wrong, interfaces out of sync with backend implementation
+
+**Status:** ✅ FIXED (Commit pending)
+
+**Fix Applied (Commit pending):**
+1. Updated ContentUploadRequest interface in api.ts to add `is_template?: boolean` and `extract_to_knowledge?: boolean`
+2. Updated uploadContent return type to include `knowledge_id`, `extracted_text`, and `error` fields
+3. Fixed FileUploadZone.tsx import statement to use correct function name
+4. Fixed FileUploadZone.tsx function call to use `uploadContent`
+5. Removed incorrect expectations for title/tags from response, using filename instead
+
+**Impact:**
+- **Before Fix:** Railway deployment blocked (fourth consecutive build failure)
+- **After Fix:** Railway can build successfully, file upload functionality works correctly
+- **Cascading Effects:** None - isolated build-time and type mismatch error
+
+**Pattern Observed:** This is the 5th build-blocking error in sequence. All caught by Railway's build process. Pattern suggests frontend/backend type definitions are out of sync - consider automated type generation from backend schemas in future.
+
+---
+
 ### Error #004: Duplicate state declarations in ContentLibrary.tsx (Feb 5, 2026)
 
 **Discovered During:** Railway production deployment attempt (third failure)

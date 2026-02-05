@@ -1185,9 +1185,17 @@ export interface ContentUploadRequest {
   tags?: string[];
   topic_keywords?: string[];
   audience?: "client" | "advisor" | "internal";
+  is_template?: boolean;
+  extract_to_knowledge?: boolean;
 }
 
-export async function uploadContent(request: ContentUploadRequest): Promise<{ success: boolean; id?: string }> {
+export async function uploadContent(request: ContentUploadRequest): Promise<{
+  success: boolean;
+  id?: string;
+  knowledge_id?: string;
+  extracted_text?: boolean;
+  error?: string;
+}> {
   return daveAPI("content/upload", { method: "POST", body: request });
 }
 
