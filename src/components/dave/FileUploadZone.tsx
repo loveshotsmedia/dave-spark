@@ -112,11 +112,19 @@ export function FileUploadZone({ onUploadComplete }: FileUploadZoneProps) {
 
       // Determine content type
       const ext = uploadFile.file.name.split('.').pop()?.toLowerCase();
-      let contentType = 'proposal';
-      if (uploadFile.file.name.toLowerCase().includes('template')) {
-        contentType = 'template';
-      } else if (uploadFile.file.name.toLowerCase().includes('article')) {
+      let contentType: "article" | "document" | "image" | "presentation" | "proposal" | "spreadsheet" | "video" = 'document';
+      if (uploadFile.file.name.toLowerCase().includes('article')) {
         contentType = 'article';
+      } else if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
+        contentType = 'document';
+      } else if (ext === 'ppt' || ext === 'pptx') {
+        contentType = 'presentation';
+      } else if (ext === 'xls' || ext === 'xlsx' || ext === 'csv') {
+        contentType = 'spreadsheet';
+      } else if (ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'gif' || ext === 'webp') {
+        contentType = 'image';
+      } else if (ext === 'mp4' || ext === 'mov' || ext === 'avi') {
+        contentType = 'video';
       }
 
       setFiles(prev => prev.map(f =>
@@ -148,7 +156,7 @@ export function FileUploadZone({ onUploadComplete }: FileUploadZoneProps) {
 
         toast.success(`Uploaded: ${uploadFile.file.name}`);
       } else {
-        throw new Error(result.message || 'Upload failed');
+        throw new Error(result.error || 'Upload failed');
       }
     } catch (error) {
       console.error('Upload error:', error);
