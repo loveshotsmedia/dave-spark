@@ -1169,10 +1169,13 @@ export interface ContentItem {
   description?: string;
   url?: string;
   file_path?: string;
+  file_content?: string;
+  storage_path?: string;
   tags?: string[];
   topic_keywords?: string[];
   audience?: "client" | "advisor" | "internal";
   created_at: string;
+  updated_at?: string;
 }
 
 export interface ContentUploadRequest {
